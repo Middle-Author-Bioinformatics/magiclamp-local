@@ -79,13 +79,16 @@ conda deactivate
 sleep 5
 
 # Archive results
-tar -cf /home/ark/MAB/magiclamp/completed/${ID}-results.tar /home/ark/MAB/magiclamp/completed/${ID}-results && gzip /home/ark/MAB/magiclamp/completed/${ID}-results.tar
+mv /home/ark/MAB/magiclamp/completed/${ID}-results ./${ID}-results
+tar -cf ${ID}-results.tar ${ID}-results && gzip ${ID}-results.tar
 
 # Upload results to S3 and generate presigned URL
-results_tar="/home/ark/MAB/magiclamp/completed/${ID}-results.tar.gz"
+results_tar="${ID}-results.tar.gz"
 s3_key="${ID}-results.tar.gz"
 python3 /home/ark/MAB/bin/magiclamp-local/push.py --bucket binfo-dump --output_key ${s3_key} --source ${results_tar}
 url=$(python3 /home/ark/MAB/bin/magiclamp-local/gen_presign_url.py --bucket binfo-dump --key ${s3_key} --expiration 86400)
+
+mv ${ID}-results.tar.gz /home/ark/MAB/magiclamp/completed/${ID}-results.tar.gz
 
 # Send email
 python3 /home/ark/MAB/bin/magiclamp-local/send_email.py \
