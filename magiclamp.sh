@@ -53,18 +53,18 @@ sleep 5
 # Rename files
 for file in ${DIR}/*.f*; do
     [[ ${file} == ${DIR}/form-data.txt ]] || mv ${file} ${file%.*}.fa
-    header-format.py -file ${file%.*}.fa -out ${file%.*}.fixed.fa -char '|' -rep '-'
+    header-format.py -file ${file%.*}.fa -out ${file%.*}.fxa -char '|' -rep '-'
 done
 
 if [[ ${option} == "Custom" ]]; then
     mkdir ${DIR}/HMMs
     mv ${DIR}/*.hmm ${DIR}/HMMs/
     mv ${DIR}/*.HMM ${DIR}/HMMs/
-    echo /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fixed.fa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs --all_results
-    /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fixed.fa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs --all_results
+    echo /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs --all_results
+    /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs --all_results
 else # genie != "custom"
-    echo /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fixed.fa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs --all_results
-    /home/ark/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fixed.fa -out ${OUT} -t 4 --all_results
+    echo /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs --all_results
+    /home/ark/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 --all_results
 fi
 
 # **************************************************************************************************
