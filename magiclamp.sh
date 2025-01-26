@@ -33,6 +33,7 @@ OUT=/home/ark/MAB/magiclamp/completed/${ID}-results
 name=$(grep 'Name' ${DIR}/form-data.txt | cut -d ' ' -f2)
 email=$(grep 'Email' ${DIR}/form-data.txt | cut -d ' ' -f2)
 option=$(grep 'Option' ${DIR}/form-data.txt | cut -d ' ' -f3)
+echo $option
 
 # Verify email
 result=$(python3 /home/ark/MAB/bin/magiclamp-local/check_email.py --email ${email})
