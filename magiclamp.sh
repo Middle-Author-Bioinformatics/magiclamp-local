@@ -53,7 +53,7 @@ sleep 5
 # Rename files
 for file in ${DIR}/*.f*; do
     [[ ${file} == ${DIR}/form-data.txt ]] || mv ${file} ${file%.*}.fa
-    header-format.py -file ${file%.*}.fa -out ${file%.*}.fxa -char '|' -rep '-'
+    /home/ark/MAB/bin/BagOfTricks/header-format.py -file ${file%.*}.fa -out ${file%.*}.fxa -char '|' -rep '-'
 done
 
 if [[ ${option} == "Custom" ]]; then
