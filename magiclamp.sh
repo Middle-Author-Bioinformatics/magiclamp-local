@@ -27,7 +27,7 @@ conda activate base  # Activate the base environment where `boto3` is installed
 KEY=$1
 ID=$KEY
 DIR=/home/ark/MAB/magiclamp/${ID}
-OUT=/home/ark/MAB/magiclamp/completed/${ID}
+OUT=/home/ark/MAB/magiclamp/completed/${ID}-results
 
 
 name=$(grep 'Name' ${DIR}/form-data.txt | cut -d ' ' -f2)
@@ -56,9 +56,9 @@ if [[ ${option} == "Custom" ]]; then
     mkdir ${DIR}/HMMs
     mv ${DIR}/*.hmm ${DIR}/HMMs/
     mv ${DIR}/*.HMM ${DIR}/HMMs/
-    /home/ec2-user/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fa -out /home/ec2-user/complete/${ID}-results -t 4 -hmm_dir ${DIR}/HMMs
+    /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs
 else # genie != "custom"
-    /home/ec2-user/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fa -out /home/ec2-user/complete/${ID}-results -t 4
+    /home/ark/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fa -out ${OUT} -t 4
 fi
 
 # **************************************************************************************************
