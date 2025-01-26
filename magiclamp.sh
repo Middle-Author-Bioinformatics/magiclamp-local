@@ -76,7 +76,7 @@ conda deactivate
 sleep 5
 
 # Archive results
-tar -cf /home/ark/MAB/magiclamp/completed/${ID}.tar /home/ark/MAB/magiclamp/completed/${ID} && gzip /home/ark/MAB/magiclamp/completed/${ID}.tar
+tar -cf /home/ark/MAB/magiclamp/completed/${ID}-results.tar /home/ark/MAB/magiclamp/completed/${ID}-results && gzip /home/ark/MAB/magiclamp/completed/${ID}-results.tar
 
 # Upload results to S3 and generate presigned URL
 results_tar="/home/ark/MAB/magiclamp/completed/${ID}.tar.gz"
