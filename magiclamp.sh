@@ -79,8 +79,8 @@ sleep 5
 tar -cf /home/ark/MAB/magiclamp/completed/${ID}-results.tar /home/ark/MAB/magiclamp/completed/${ID}-results && gzip /home/ark/MAB/magiclamp/completed/${ID}-results.tar
 
 # Upload results to S3 and generate presigned URL
-results_tar="/home/ark/MAB/magiclamp/completed/${ID}.tar.gz"
-s3_key="${ID}.tar.gz"
+results_tar="/home/ark/MAB/magiclamp/completed/${ID}-results.tar.gz"
+s3_key="${ID}-results.tar.gz"
 python3 /home/ark/MAB/bin/magiclamp-local/push.py --bucket binfo-dump --output_key ${s3_key} --source ${results_tar}
 url=$(python3 /home/ark/MAB/bin/magiclamp-local/gen_presign_url.py --bucket binfo-dump --key ${s3_key} --expiration 86400)
 
