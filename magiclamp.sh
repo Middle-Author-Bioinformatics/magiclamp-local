@@ -32,7 +32,7 @@ OUT=/home/ark/MAB/magiclamp/completed/${ID}-results
 
 name=$(grep 'Name' ${DIR}/form-data.txt | cut -d ' ' -f2)
 email=$(grep 'Email' ${DIR}/form-data.txt | cut -d ' ' -f2)
-option=$(grep 'Option' ${DIR}/form-data.txt | cut -d ' ' -f3)
+option=$(grep 'Option' ${DIR}/form-data.txt | cut -d ' ' -f2)
 echo $option
 
 # Verify email
