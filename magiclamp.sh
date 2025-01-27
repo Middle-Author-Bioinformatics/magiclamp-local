@@ -60,10 +60,15 @@ if [[ ${option} == "Custom" ]]; then
     mkdir ${DIR}/HMMs
     mv ${DIR}/*.hmm ${DIR}/HMMs/
     mv ${DIR}/*.HMM ${DIR}/HMMs/
-    echo /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs --all_results
-    /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs --all_results
+
+    for file in ${DIR}/HMMs/*; do
+      mv ${file} ${file%.*}.hmm
+  done
+
+    echo /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
+    /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
 else # genie != "custom"
-    echo /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs --all_results
+    echo /home/ark/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs --all_results
     /home/ark/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 --all_results
 fi
 
