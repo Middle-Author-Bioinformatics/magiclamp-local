@@ -65,13 +65,13 @@ if [[ ${option} == "Custom" ]]; then
       mv ${file} ${file%.*}.hmm
   done
 
-    echo /home/ark/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
+    echo /home/ark/bin/MAB/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
     /home/ark/MAB/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
 #elif [[ ${option} =~ ^(Custom|Option1|Option2)$ ]]; then
 #    echo /home/ark/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 --all_results
 #    /home/ark/MAB/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 --all_results
 else
-    echo /home/ark/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4
+    echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4
     /home/ark/MAB/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4
 fi
 
