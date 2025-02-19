@@ -13,17 +13,6 @@ exec 2>&1
 eval "$(/home/ark/miniconda3/bin/conda shell.bash hook)"
 conda activate base  # Activate the base environment where `boto3` is installed
 
-# Debug PATH
-#echo "Updated PATH: $PATH"
-
-# Debug Python environment
-#echo "Python version being used:"
-#which python3
-#python3 --version
-#
-#echo "Python modules installed:"
-#python3 -m pip list
-
 KEY=$1
 ID=$KEY
 DIR=/home/ark/MAB/magiclamp/${ID}
@@ -34,6 +23,10 @@ name=$(grep 'Name' ${DIR}/form-data.txt | cut -d ' ' -f2)
 email=$(grep 'Email' ${DIR}/form-data.txt | cut -d ' ' -f2)
 option=$(grep 'Option' ${DIR}/form-data.txt | cut -d ' ' -f2)
 echo $option
+
+Name: Arkadiy
+Email: rkdgarber@gmail.com
+Option: LithoGenie
 
 # Verify email
 result=$(python3 /home/ark/MAB/bin/magiclamp-local/check_email.py --email ${email})
