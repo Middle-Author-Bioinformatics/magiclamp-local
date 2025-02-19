@@ -5,11 +5,6 @@ conda activate base  # Activate the base environment where `boto3` is installed
 exec > >(tee -i /home/ark/MAB/magiclamp/magiclamp_looper.log)
 exec 2>&1
 
-## Debugging information
-#echo "Script started at $(date)"
-#echo "Current directory: $(pwd)"
-#echo "Environment variables: $(env)"
-
 eval "$(/home/ark/miniconda3/bin/conda shell.bash hook)"
 conda activate base  # Activate the base environment where `boto3` is installed
 
@@ -23,10 +18,6 @@ name=$(grep 'Name' ${DIR}/form-data.txt | cut -d ' ' -f2)
 email=$(grep 'Email' ${DIR}/form-data.txt | cut -d ' ' -f2)
 option=$(grep 'Option' ${DIR}/form-data.txt | cut -d ' ' -f2)
 echo $option
-
-Name: Arkadiy
-Email: rkdgarber@gmail.com
-Option: LithoGenie
 
 # Verify email
 result=$(python3 /home/ark/MAB/bin/magiclamp-local/check_email.py --email ${email})
