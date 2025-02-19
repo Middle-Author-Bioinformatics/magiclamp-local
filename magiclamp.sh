@@ -57,22 +57,26 @@ for file in ${DIR}/*.f*; do
 done
 
 if [[ ${option} == "Custom" ]]; then
+
     mkdir ${DIR}/HMMs
     mv ${DIR}/*.hmm ${DIR}/HMMs/
     mv ${DIR}/*.HMM ${DIR}/HMMs/
 
     for file in ${DIR}/HMMs/*; do
       mv ${file} ${file%.*}.hmm
-  done
+    done
 
     echo /home/ark/bin/MAB/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
     /home/ark/MAB/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
-#elif [[ ${option} =~ ^(Custom|Option1|Option2)$ ]]; then
-#    echo /home/ark/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 --all_results
-#    /home/ark/MAB/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 --all_results
+elif [[ ${option} == "FeGenie" ]]; then
+    echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
+    /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4
+elif [[ ${option} == "LithoGenie" ]]; then
+    echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
+    /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4
 else
-    echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4
-    /home/ark/MAB/bin/MagicLamp/MagicLamp.py ${option} -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4
+    echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -genie ${option}
+    /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -genie ${option}
 fi
 
 # **************************************************************************************************
