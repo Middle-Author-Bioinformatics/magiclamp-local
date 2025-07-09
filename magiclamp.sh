@@ -85,6 +85,8 @@ python3 /home/ark/MAB/bin/magiclamp-local/push.py --bucket binfo-dump --output_k
 url=$(python3 /home/ark/MAB/bin/magiclamp-local/gen_presign_url.py --bucket binfo-dump --key ${s3_key} --expiration 86400)
 
 mv ${ID}-results.tar.gz /home/ark/MAB/magiclamp/completed/${ID}-results.tar.gz
+rm -rf ./${ID}-results
+
 
 # Send email
 python3 /home/ark/MAB/bin/magiclamp-local/send_email.py \
