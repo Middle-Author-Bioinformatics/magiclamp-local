@@ -10,6 +10,8 @@ import os
 # Initialize SES client
 ses = boto3.client('ses', region_name='us-east-2')
 
+bcc_email = 'binfo@midauthorbio.com'
+
 # Function to send email with attachment using SES
 def send_email_with_attachment(sender_email, recipient_email, subject, body, attachment_path):
     """
@@ -21,6 +23,7 @@ def send_email_with_attachment(sender_email, recipient_email, subject, body, att
         msg['From'] = sender_email
         msg['To'] = recipient_email
         msg['Subject'] = subject
+        msg['Bcc'] = bcc_email
 
         # Add body text
         msg.attach(MIMEText(body, 'plain'))
@@ -64,6 +67,7 @@ def send_email_without_attachment(sender_email, recipient_email, subject, body):
         msg['From'] = sender_email
         msg['To'] = recipient_email
         msg['Subject'] = subject
+        msg['Bcc'] = bcc_email
 
         # Add body text
         msg.attach(MIMEText(body, 'plain'))
