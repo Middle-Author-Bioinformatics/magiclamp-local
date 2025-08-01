@@ -99,7 +99,7 @@ python3 /home/ark/MAB/bin/magiclamp-local/send_email.py \
     Please reach out to ark@midauthorbio.com, or send us a note on https://midauthorbio.com/#contact if you have any questions.
 
     Thanks!
-    MAB Team"
+    Your friendly neighborood bioinformatician 🕸️
 
 if [ $? -ne 0 ]; then
     echo "Error: send_email.py failed."
