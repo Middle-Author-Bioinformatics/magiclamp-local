@@ -17,11 +17,6 @@ OUT=/home/ark/MAB/magiclamp/completed/${ID}-results
 name=$(grep 'Name' ${DIR}/form-data.txt | cut -d ' ' -f2)
 email=$(grep 'Email' ${DIR}/form-data.txt | cut -d ' ' -f2)
 option=$(grep 'Option' ${DIR}/form-data.txt | cut -d ' ' -f2)
-echo $option
-
-# Verify email
-result=$(python3 /home/ark/MAB/bin/magiclamp-local/check_email.py --email ${email})
-echo $result
 
 # Set PATH to include Conda and script locations
 export PATH="/home/ark/miniconda3/bin:/usr/local/bin:/usr/bin:/bin:/home/ark/MAB/bin/magiclamp-local:$PATH"
