@@ -45,17 +45,17 @@ if [[ ${option} == "Custom" ]]; then
       mv ${file} ${file%.*}.hmm
     done
 
-    echo /home/ark/bin/MAB/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
-    /home/ark/MAB/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
+    echo /home/ark/bin/MAB/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
+    /home/ark/MAB/bin/MagicLamp/MagicLamp.py HmmGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
 elif [[ ${option} == "FeGenie" ]]; then
-    echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
-    /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4
+    echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
+    /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8
 elif [[ ${option} == "LithoGenie" ]]; then
-    echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
-    /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4
+    echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8 -hmm_dir ${DIR}/HMMs -hmm_ext hmm
+    /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8
 else
-    echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -genie ${option}
-    /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 4 -genie ${option}
+    echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8 -genie ${option}
+    /home/ark/MAB/bin/MagicLamp/MagifcLamp.py OmniGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8 -genie ${option}
 fi
 
 # **************************************************************************************************
