@@ -85,7 +85,7 @@ rm -rf ./${ID}-results
 
 # Send email
 python3 /home/ark/MAB/bin/magiclamp-local/send_email.py \
-    --sender ark@midauthorbio.com \
+    --sender binfo@midauthorbio.com \
     --recipient ${email} \
     --subject "Your MagicLamp Results!" \
     --body "Hi ${name},
@@ -99,7 +99,7 @@ python3 /home/ark/MAB/bin/magiclamp-local/send_email.py \
     Please reach out to ark@midauthorbio.com, or send us a note on https://midauthorbio.com/#contact if you have any questions.
 
     Thanks!
-    Your friendly neighborood bioinformatician 🕸️
+    Your friendly neighborood bioinformatician 🕸️"
 
 if [ $? -ne 0 ]; then
     echo "Error: send_email.py failed."
