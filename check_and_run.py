@@ -82,7 +82,7 @@ def process_folder(folder_name):
     download_folder(BUCKET_NAME, folder_name, local_dir)
 
     # Run magiclamp.sh script with folder_name as argument
-    magiclamp_script_path = '/home/ark/MAB/bin/magiclamp-local/magiclamp.sh'
+    magiclamp_script_path = '/home/ark/MAB/bin/magiclamp-local/magiclamp.v2.sh'
     try:
         subprocess.run([magiclamp_script_path, folder_name], check=True)
         print(f"Successfully processed folder {folder_name} using magiclamp.sh.")
