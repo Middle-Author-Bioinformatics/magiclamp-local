@@ -29,11 +29,7 @@ if [ $? -ne 0 ]; then
 fi
 sleep 5
 
-# Rename files
-for file in ${DIR}/*.f*; do
-    [[ ${file} == ${DIR}/form-data.txt ]] || mv ${file} ${file%.*}.fa
-    /home/ark/MAB/bin/BagOfTricks/header-format.py -file ${file%.*}.fa -out ${file%.*}.fxa -char '|' -rep '-'
-done
+gb
 
 if [[ ${option} == "Custom" ]]; then
 
@@ -55,7 +51,7 @@ elif [[ ${option} == "LithoGenie" ]]; then
     /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8
 else
     echo /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8 -genie ${option}
-    /home/ark/MAB/bin/MagicLamp/MagifcLamp.py OmniGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8 -genie ${option}
+    /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie -bin_dir ${DIR} -bin_ext fxa -out ${OUT} -t 8 -genie ${option}
 fi
 
 # **************************************************************************************************
