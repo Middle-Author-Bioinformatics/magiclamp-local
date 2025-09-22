@@ -33,18 +33,24 @@ mkdir -p "${OUT}"
 # -------------------------
 # Parse form-data.txt lines
 # -------------------------
+
 get_field () {
   local label="$1"
-  awk -F': ' -v k="$label" '$1==k { $1=""; sub(/^: /,""); print; exit }' "${FORM}"
+  awk -v k="$label" '
+    BEGIN { FS=":[ \t]*" }     # split on ":" + any spaces
+    $1 == k { print $2; exit } # print the value part only
+  ' "$FORM" | sed 's/^[ \t]*//; s/[ \t]*$//'
 }
 
-name="$(get_field 'Name')"
-email="$(get_field 'Email')"
-option="$(get_field 'Option')"
-accession_fname="$(get_field 'Accession List')"   # if provided (accession mode)
-genus="$(get_field 'Genus')"                      # if provided (taxon mode)
-species="$(get_field 'Species')"                  # optional
-strains="${strains:-}"                            # optional (not in form-data.txt today)
+trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; printf '%s' "$s"; }
+
+name="$(trim "$(get_field 'Name')")"
+email="$(trim "$(get_field 'Email')")"
+option="$(trim "$(get_field 'Option')")"
+accession_fname="$(trim "$(get_field 'Accession List')")"
+genus="$(trim "$(get_field 'Genus')")"
+species="$(trim "$(get_field 'Species')")"
+strains="$(trim "$(get_field 'Strain')")"
 
 # -------------------------
 # Runtime env for MagicLamp
@@ -135,6 +141,8 @@ download_genbank_by_taxon () {
 # --------------------------------------------------------------------
 if [[ "${mode}" == "accession" ]]; then
   src_accession_file="${DIR}/${accession_fname}"
+  echo "[DEBUG] accession_fname='${accession_fname}'"
+  echo "[DEBUG] resolved path='${src_accession_file}'"
   [[ -s "${src_accession_file}" ]] || { echo "ERROR: missing accession file: ${src_accession_file}"; exit 1; }
 
   finalize_accessions "${src_accession_file}" "${OUT}/ncbi.accessions.final.sorted.tsv" || exit 1
