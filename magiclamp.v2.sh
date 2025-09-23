@@ -5,7 +5,7 @@ set -o pipefail
 # Config you may want to set
 # --------------------------
 NCBI2GENOMES="${NCBI2GENOMES:-/home/ark/MAB/bin/magiclamp-local/ncbi2genomes.py}"
-NCBI_ASM_TSV="${NCBI_ASM_TSV:-/home/ark/databases/assembly_summary_all.tsv}"
+NCBI_ASM_TSV="${NCBI_ASM_TSV:-/home/ark/databases/ncbi_assembly_info.tsv}"
 BIT_DL_BIN="${BIT_DL_BIN:-bit-dl-ncbi-assemblies}"   # must be on PATH or set full path
 DL_THREADS="${DL_THREADS:-16}"
 
