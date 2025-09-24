@@ -272,6 +272,8 @@ sleep 2
 # ---------------
 # Package results
 # ---------------
+rm -rf "${download_dir}"
+rm -rf "${OUT}/ORF_calls"
 mv "/home/ark/MAB/magiclamp/completed/${ID}-results" "./${ID}-results"
 tar -cf "${ID}-results.tar" "${ID}-results" && gzip -f "${ID}-results.tar"
 
