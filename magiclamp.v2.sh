@@ -236,12 +236,14 @@ fi
 
 # Check inputs exist
 if [[ "${mode}" == "fasta" ]]; then
+  BINDIR="${DIR}"
   if ! compgen -G "${DIR}/*.fxa" > /dev/null; then
     echo "ERROR: No genome inputs (*.fxa) found. Aborting."
     conda deactivate
     exit 1
   fi
 else
+  BINDIR="${download_dir}"
   if ! compgen -G "${download_dir}/*.gb" > /dev/null; then
     echo "ERROR: No GenBank inputs (*.gb) found after staging. Aborting."
     conda deactivate
@@ -251,13 +253,13 @@ fi
 
 set -x
 if [[ "${option}" == "Custom" ]]; then
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py HmmGenie   -bin_dir "${download_dir}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 -hmm_dir "${DIR}/HMMs" -hmm_ext hmm ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py HmmGenie   -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 -hmm_dir "${DIR}/HMMs" -hmm_ext hmm ${EXTRA_FLAGS}
 elif [[ "${option}" == "FeGenie" ]]; then
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie    -bin_dir "${download_dir}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie    -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
 elif [[ "${option}" == "LithoGenie" ]]; then
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir "${download_dir}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
 else
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie  -bin_dir "${download_dir}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 -genie "${option}" ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie  -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 -genie "${option}" ${EXTRA_FLAGS}
 fi
 set +x
 
