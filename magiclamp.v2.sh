@@ -118,7 +118,7 @@ download_genbank_by_taxon () {
   fi
 
   echo "Generating accessions from taxonomy: Genus='${genus}', Species='${species}', Strain='${strains}'"
-  mkdir -p "${OUT}"
+#  mkdir -p "${OUT}"
 
   # Your ncbi2genomes.py block (as requested)
   python3 "${NCBI2GENOMES}" \
