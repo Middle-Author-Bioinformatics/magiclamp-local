@@ -253,13 +253,13 @@ fi
 
 set -x
 if [[ "${option}" == "Custom" ]]; then
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py HmmGenie   -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 -hmm_dir "${DIR}/HMMs" -hmm_ext hmm ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py HmmGenie   -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}/MagicLamp" -t 8 -hmm_dir "${DIR}/HMMs" -hmm_ext hmm ${EXTRA_FLAGS}
 elif [[ "${option}" == "FeGenie" ]]; then
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie    -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie    -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}/MagicLamp" -t 8 ${EXTRA_FLAGS}
 elif [[ "${option}" == "LithoGenie" ]]; then
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}/MagicLamp" -t 8 ${EXTRA_FLAGS}
 else
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie  -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 -genie "${option}" ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie  -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}/MagicLamp" -t 8 -genie "${option}" ${EXTRA_FLAGS}
 fi
 set +x
 
@@ -275,7 +275,9 @@ sleep 2
 # Package results
 # ---------------
 rm -rf "${download_dir}"
-rm -rf "${OUT}/ORF_calls"
+rm -rf "${OUT}/ncbi.accessions.final.sorted.tsv"
+rm -rf "${OUT}/ncbi.accessions.tsv"
+rm -rf "${OUT}/MagicLamp/ORF_calls"
 mv "/home/ark/MAB/magiclamp/completed/${ID}-results" "./${ID}-results"
 tar -cf "${ID}-results.tar" "${ID}-results" && gzip -f "${ID}-results.tar"
 
