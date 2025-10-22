@@ -274,7 +274,7 @@ sleep 2
 # ---------------
 # Package results
 # ---------------
-#rm -rf "${download_dir}"
+rm -rf "${download_dir}"
 rm -rf "${OUT}/ncbi.accessions.final.sorted.tsv"
 rm -rf "${OUT}/ncbi.accessions.tsv"
 rm -rf "${OUT}/MagicLamp/ORF_calls"
@@ -289,8 +289,8 @@ s3_key="${ID}-results.tar.gz"
 python3 /home/ark/MAB/bin/magiclamp-local/push.py --bucket binfo-dump --output_key "${s3_key}" --source "${results_tar}"
 url=$(python3 /home/ark/MAB/bin/magiclamp-local/gen_presign_url.py --bucket binfo-dump --key "${s3_key}" --expiration 86400)
 
-#mv "${ID}-results.tar.gz" "/home/ark/MAB/magiclamp/completed/${ID}-results.tar.gz"
-#rm -rf "./${ID}-results"
+mv "${ID}-results.tar.gz" "/home/ark/MAB/magiclamp/completed/${ID}-results.tar.gz"
+rm -rf "./${ID}-results"
 
 python3 /home/ark/MAB/bin/magiclamp-local/send_email.py \
   --sender binfo@midauthorbio.com \
