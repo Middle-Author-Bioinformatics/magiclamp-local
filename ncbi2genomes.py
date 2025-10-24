@@ -46,7 +46,7 @@ def main():
             bioproject = ls[1]
             biosample = ls[2]
             organism = ls[7]
-            strain = ls[8].split("=")[0]
+            strain = ls[8].split("=")[1]
             assembly_level = ls[11]
             genome_rep = ls[13]
             seq_release = ls[14]
