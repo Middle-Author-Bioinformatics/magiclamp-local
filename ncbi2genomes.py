@@ -46,7 +46,7 @@ def main():
             bioproject = ls[1]
             biosample = ls[2]
             organism = ls[7]
-            strain = ls[8]
+            strain = ls[8].split("=")[0]
             assembly_level = ls[11]
             genome_rep = ls[13]
             seq_release = ls[14]
@@ -72,8 +72,9 @@ def main():
                     if re.search(args.species.lower(), organism.lower()): # but does it match?
 
                         if len(args.strain) > 1: # strain name provided
+                            strainInput = args.strain
 
-                            if re.search(args.strain, i.rstrip()): # but does it match?
+                            if re.search(strainInput.lower(), strain.lower()): # but does it match?
 
                                 out.write(f"{assembly}\t{bioproject}\t{biosample}\t"
                                           f"{organism}\t{strain}\t{assembly_level}\t{genome_rep}\t"
