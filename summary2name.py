@@ -1,81 +1,82 @@
 #!/usr/bin/env python3
 """
-Add organism and infraspecific (strain) names from an NCBI assembly summary file
-to an existing CSV file that contains NCBI assembly accessions.
+Add organism_name and infraspecific_name columns from an NCBI assembly summary file
+to a MagicLamp-style summary file (e.g., lithogenie-summary.csv).
 
-This script takes:
-  1. A CSV file (e.g., lithogenie-summary.csv) whose first column contains NCBI
-     assembly accessions (e.g., GCF_000006765.1 or GCF_000006765.1.gb).
-  2. A NCBI assembly summary file (TSV format, e.g., assembly_summary_refseq.txt).
-
-It produces a new CSV file identical to the input, but with two additional columns:
-  - 'organism_name' (inserted as the second column)
-  - 'infraspecific_name' (inserted as the third column)
-
-Example usage:
-    ./add_organism_and_strain_columns.py \
-        -i lithogenie-summary.csv \
-        -a assembly_summary_refseq.sub.txt \
-        -o lithogenie-summary_with_organism_strain.csv
+- Automatically detects the delimiter (tab or comma).
+- Handles irregular rows and comment lines beginning with '#'.
+- Works regardless of number of columns in the summary file.
 """
 
 import pandas as pd
 import argparse
 import sys
 import re
+import csv
+
+
+def detect_delimiter(filepath):
+    """Try to auto-detect delimiter (comma, tab, or semicolon)."""
+    with open(filepath, "r", encoding="utf-8") as f:
+        sample = f.read(2048)
+        try:
+            sniffer = csv.Sniffer()
+            dialect = sniffer.sniff(sample, delimiters=[",", "\t", ";"])
+            return dialect.delimiter
+        except Exception:
+            return "\t"  # default to tab-delimited
 
 
 def main():
-    # ---------------------------
-    # Parse command-line arguments
-    # ---------------------------
     parser = argparse.ArgumentParser(
-        description="Add organism_name and infraspecific_name columns to a CSV file using NCBI assembly summary."
+        description="Add organism_name and infraspecific_name columns using an NCBI assembly summary."
     )
-    parser.add_argument(
-        "-i", "--input",
-        required=True,
-        help="Path to the input CSV file (e.g., lithogenie-summary.csv)"
-    )
-    parser.add_argument(
-        "-a", "--assembly",
-        required=True,
-        help="Path to the NCBI assembly summary file (TSV format, e.g., assembly_summary_refseq.txt)"
-    )
-    parser.add_argument(
-        "-o", "--output",
-        required=True,
-        help="Path to the output CSV file (e.g., lithogenie-summary_with_organism_strain.csv)"
-    )
-
+    parser.add_argument("-i", "--input", required=True, help="Input summary CSV/TSV file")
+    parser.add_argument("-a", "--assembly", required=True, help="NCBI assembly_summary_refseq.tsv file")
+    parser.add_argument("-o", "--output", required=True, help="Output file name")
     args = parser.parse_args()
 
+    # Detect delimiter for the input file
+    delim = detect_delimiter(args.input)
+    print(f"Detected delimiter: '{delim.replace(chr(9), 'TAB')}'")
+
     # ---------------------------
-    # Read the input files
+    # Read the input summary file
     # ---------------------------
     try:
-        print(f"Reading input CSV file: {args.input}")
-        summary_df = pd.read_csv(args.input)
+        summary_df = pd.read_csv(
+            args.input,
+            sep=delim,
+            dtype=str,
+            engine="python",
+            comment="#",
+            on_bad_lines="warn"
+        ).fillna("")
+        print(f"Loaded {len(summary_df)} rows from summary file.")
+    except Exception as e:
+        print("Error reading summary file:", e)
+        sys.exit(1)
 
-        print(f"Reading NCBI assembly summary file: {args.assembly}")
+    # ---------------------------
+    # Read the NCBI assembly summary file
+    # ---------------------------
+    try:
         assembly_df = pd.read_csv(
             args.assembly,
             sep="\t",
             dtype=str,
-            comment="#",   # Skip commented lines in the NCBI file
+            comment="#",
             low_memory=False
-        )
+        ).fillna("")
+        print(f"Loaded {len(assembly_df)} entries from assembly summary file.")
     except Exception as e:
-        print(f"Error reading input files: {e}")
+        print("Error reading assembly summary file:", e)
         sys.exit(1)
 
     # ---------------------------
-    # Clean and standardize accession identifiers
+    # Clean up identifiers
     # ---------------------------
-    # The first column of the CSV should contain assembly accessions.
     first_col = summary_df.columns[0]
-
-    # Remove .gb or .gbk file extensions and any whitespace
     summary_df[first_col] = (
         summary_df[first_col]
         .astype(str)
@@ -85,51 +86,42 @@ def main():
 
     assembly_df["assembly_accession"] = assembly_df["assembly_accession"].astype(str).str.strip()
 
-    # ---------------------------
-    # Extract relevant NCBI columns
-    # ---------------------------
-    # We only need the columns that will be merged in.
+    # Ensure required columns exist
     if "infraspecific_name" not in assembly_df.columns:
-        print("Warning: The NCBI assembly summary file does not contain 'infraspecific_name' column.")
         assembly_df["infraspecific_name"] = ""
 
     mapping_df = assembly_df[["assembly_accession", "organism_name", "infraspecific_name"]]
 
     # ---------------------------
-    # Merge datasets on assembly accession
+    # Merge and reorder columns
     # ---------------------------
-    print("Merging on assembly accession...")
+    print("Merging assembly information into summary file...")
     merged_df = summary_df.merge(
         mapping_df,
         left_on=first_col,
         right_on="assembly_accession",
-        how="left"  # Preserve all rows from the input CSV
+        how="left"
     )
 
-    # ---------------------------
-    # Reorder columns
-    # ---------------------------
-    all_cols = merged_df.columns.tolist()
-
-    # Move organism_name and infraspecific_name to positions 2 and 3
-    org_col = all_cols.pop(all_cols.index("organism_name"))
-    inf_col = all_cols.pop(all_cols.index("infraspecific_name"))
-    all_cols.insert(1, org_col)
-    all_cols.insert(2, inf_col)
-
-    merged_df = merged_df[all_cols]
+    # Insert new columns after the first one
+    columns = merged_df.columns.tolist()
+    org_col = columns.pop(columns.index("organism_name"))
+    inf_col = columns.pop(columns.index("infraspecific_name"))
+    columns.insert(1, org_col)
+    columns.insert(2, inf_col)
+    merged_df = merged_df[columns]
 
     # ---------------------------
-    # Write output file
+    # Write output
     # ---------------------------
     try:
-        merged_df.to_csv(args.output, index=False)
-        print("Merge completed successfully.")
-        print(f"Output file written to: {args.output}")
+        merged_df.to_csv(args.output, sep=delim, index=False)
+        print(f"Output written successfully: {args.output}")
     except Exception as e:
-        print(f"Error writing output file: {e}")
+        print("Error writing output file:", e)
         sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
+
