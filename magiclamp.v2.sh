@@ -110,14 +110,14 @@ download_genbank_by_accession () {
 download_genbank_by_taxon () {
   local genus="$1"
   local species="$2"
-  local strains="$3"
+  local strain="$3"
 
   if [[ -z "${genus}" ]]; then
     echo "ERROR: taxon mode selected but no genus provided."
     return 2
   fi
 
-  echo "Generating accessions from taxonomy: Genus='${genus}', Species='${species}', Strain='${strains}'"
+  echo "Generating accessions from taxonomy: Genus='${genus}', Species='${species}', Strain='${strain}'"
   mkdir -p "${OUT}"
 
   # Your ncbi2genomes.py block (as requested)
@@ -149,7 +149,7 @@ if [[ "${mode}" == "accession" ]]; then
   download_genbank_by_accession "${OUT}/ncbi.accessions.final.sorted.tsv" || { echo "ERROR: accession download failed"; exit 1; }
 
 elif [[ "${mode}" == "taxon" ]]; then
-  download_genbank_by_taxon "${genus}" "${species}" "${strains}" || { echo "ERROR: taxon download failed"; exit 1; }
+  download_genbank_by_taxon "${genus}" "${species}" "${strain}" || { echo "ERROR: taxon download failed"; exit 1; }
 
 else
   echo "[INFO] FASTA mode: skipping GenBank download"
