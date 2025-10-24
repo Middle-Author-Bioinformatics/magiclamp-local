@@ -73,6 +73,9 @@ def main():
 
                         if len(args.strain) > 1: # strain name provided
                             strainInput = args.strain
+                            print(strain)
+                            print(strainInput)
+                            print("")
 
                             if re.search(strainInput.lower(), strain.lower()): # but does it match?
 
