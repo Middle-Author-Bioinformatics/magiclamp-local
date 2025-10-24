@@ -258,7 +258,7 @@ elif [[ "${option}" == "FeGenie" ]]; then
   /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie    -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}/MagicLamp" -t 8 ${EXTRA_FLAGS}
 elif [[ "${option}" == "LithoGenie" ]]; then
   /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}/MagicLamp" -t 8 ${EXTRA_FLAGS}
-  /home/ark/MAB/bin/MagicLamp/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/MagicLamp/lithogenie-summary.csv -o ${OUT}/MagicLamp/lithogenie-summary.names.csv
+  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/MagicLamp/lithogenie-summary.csv -o ${OUT}/MagicLamp/lithogenie-summary.names.csv
 else
   /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie  -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}/MagicLamp" -t 8 -genie "${option}" ${EXTRA_FLAGS}
 fi
