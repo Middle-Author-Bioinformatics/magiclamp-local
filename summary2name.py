@@ -57,7 +57,7 @@ def read_assembly_summary(path):
     df = pd.read_csv(
         path,
         sep="\t",
-        comment="##",   # skip only double-hash comments
+        comment="#",   # skip only double-hash comments
         header=None,
         names=header_cols,
         dtype=str,
