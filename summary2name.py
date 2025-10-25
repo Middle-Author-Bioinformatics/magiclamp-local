@@ -31,26 +31,37 @@ def detect_delimiter(filepath):
 def read_assembly_summary(path):
     """
     Read an NCBI assembly summary file robustly.
-
-    Extracts the last line starting with '#assembly_accession' (or '# assembly_accession')
-    as the header, then reads the file using that header.
+    Looks for a line that starts with '#assembly_accession' or '# assembly_accession'
+    (ignoring any leading '##' comment lines) and uses it as header.
     """
     print(f"Reading assembly summary file: {path}")
 
     header_line = None
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
-            # Find the line that contains the real header (starts with '#assembly_accession')
-            if line.startswith("#assembly_accession") or line.startswith("# assembly_accession"):
-                header_line = line.strip().lstrip("#").strip()
+            # skip generic comments
+            if line.startswith("##"):
+                continue
+            if line.startswith("assembly_accession"):
+                header_line = line.strip()
+                print(header_line)
+                break
     if not header_line:
-        raise ValueError("Could not find header line (starting with '#assembly_accession') in assembly summary file.")
+        raise ValueError(
+            "Could not find a header line starting with 'assembly_accession' in the assembly summary file."
+        )
 
     header_cols = re.split(r"\t+", header_line)
-    print(f"Detected {len(header_cols)} columns in assembly summary header.")
-
-    # Read rest of the file, skipping lines that start with '#'
-    df = pd.read_csv(path, sep="\t", comment="#", header=None, names=header_cols, dtype=str, low_memory=False)
+    print(f"Detected {len(header_cols)} header columns in assembly summary header.")
+    df = pd.read_csv(
+        path,
+        sep="\t",
+        comment="#",
+        header=None,
+        names=header_cols,
+        dtype=str,
+        low_memory=False,
+    )
     return df.fillna("")
 
 
@@ -102,7 +113,7 @@ def main():
         summary_df[first_col]
         .astype(str)
         .str.strip()
-        .apply(lambda x: re.sub(r"\.gbk?$", "", x, flags=re.IGNORECASE))
+        .apply(lambda x: re.sub(r"\.gb?$", "", x, flags=re.IGNORECASE))
     )
 
     if "assembly_accession" not in assembly_df.columns:
