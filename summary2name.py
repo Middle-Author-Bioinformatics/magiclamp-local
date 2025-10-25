@@ -71,14 +71,26 @@ def main():
     parser = argparse.ArgumentParser(
         description="Add organism_name and infraspecific_name columns from an NCBI assembly summary."
     )
-    parser.add_argument("-i", "--input", required=True, help="Input lithogenie-summary CSV/TSV file")
-    parser.add_argument("-a", "--assembly", required=True, help="NCBI assembly_summary_refseq.tsv file")
-    parser.add_argument("-o", "--output", required=True, help="Output CSV/TSV file name")
+    parser.add_argument(
+        "-i", "--input", required=True,
+        help="Input lithogenie-summary CSV/TSV file"
+    )
+    parser.add_argument(
+        "-a", "--assembly", required=True,
+        help="NCBI assembly_summary_refseq.tsv file"
+    )
+    parser.add_argument(
+        "-o", "--output", required=True,
+        help="Output CSV/TSV file name"
+    )
     args = parser.parse_args()
 
-    # Detect delimiter for lithogenie summary
+    # ---------------------------
+    # Detect delimiter
+    # ---------------------------
     delim = detect_delimiter(args.input)
-    print(f"Detected delimiter: '{delim.replace(chr(9), 'TAB')}'")
+    display_delim = "TAB" if delim == "\t" else delim
+    print(f"Detected delimiter: '{display_delim}'")
 
     # ---------------------------
     # Read lithogenie summary
@@ -111,12 +123,19 @@ def main():
     # Normalize accession names
     # ---------------------------
     first_col = summary_df.columns[0]
-    summary_df[first_col] = (
-        summary_df[first_col]
-        .astype(str)
-        .str.strip()
-        .apply(lambda x: re.sub(r"\.gb?$", "", x, flags=re.IGNORECASE))
-    )
+
+    def clean_accession(x):
+        """Normalize accession names to match NCBI assembly_accession field."""
+        if pd.isna(x):
+            return ""
+        x = str(x).strip()
+        # Remove known suffixes and extensions
+        x = re.sub(r"\.(gbk?|fna|fasta|fa|gz)$", "", x, flags=re.IGNORECASE)
+        # Remove directory paths
+        x = re.sub(r".*/", "", x)
+        return x
+
+    summary_df[first_col] = summary_df[first_col].apply(clean_accession)
 
     if "assembly_accession" not in assembly_df.columns:
         print("Error: 'assembly_accession' column not found after header parsing.")
@@ -133,15 +152,26 @@ def main():
     # Merge and reorder
     # ---------------------------
     print("Merging assembly data into lithogenie summary...")
-    merged_df = summary_df.merge(mapping_df, left_on=first_col, right_on="assembly_accession", how="left")
+    merged_df = summary_df.merge(
+        mapping_df,
+        left_on=first_col,
+        right_on="assembly_accession",
+        how="left"
+    )
 
-    # Move organism_name & infraspecific_name to 2nd & 3rd positions
+    # Insert organism_name and infraspecific_name as 2nd and 3rd columns
     cols = merged_df.columns.tolist()
-    org_col = cols.pop(cols.index("organism_name"))
-    inf_col = cols.pop(cols.index("infraspecific_name"))
-    cols.insert(1, org_col)
-    cols.insert(2, inf_col)
-    merged_df = merged_df[cols]
+    for col in ["assembly_accession"]:
+        if col in cols:
+            cols.remove(col)
+    if "organism_name" in cols:
+        cols.remove("organism_name")
+    if "infraspecific_name" in cols:
+        cols.remove("infraspecific_name")
+
+    cols.insert(1, "organism_name")
+    cols.insert(2, "infraspecific_name")
+    merged_df = merged_df.reindex(columns=cols)
 
     # ---------------------------
     # Write output
