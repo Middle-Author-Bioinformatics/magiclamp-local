@@ -87,9 +87,9 @@ def main():
     args = parser.parse_args()
 
     accDict = defaultdict(list)
-    summary = open(args.i)
-    assembly = open(args.a)
-    out = open(args.o, "w")
+    summary = open(args.input)
+    assembly = open(args.assembly)
+    out = open(args.output, "w")
     for i in assembly:
         if re.match(r'^assembly_accession', i):
             pass
