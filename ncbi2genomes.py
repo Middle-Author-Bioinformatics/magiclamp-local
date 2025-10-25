@@ -76,11 +76,8 @@ def main():
 
                         if len(args.strain) > 1: # strain name provided
                             strainInput = args.strain
-                            print(strain)
-                            print(strainInput)
-                            print("")
 
-                            if re.search(strainInput.lower(), strain.lower()): # but does it match?
+                            if strainInput.lower() == strain.lower(): # but does it match?
 
                                 out.write(f"{assembly}\t{bioproject}\t{biosample}\t"
                                           f"{organism}\t{strain}\t{assembly_level}\t{genome_rep}\t"
