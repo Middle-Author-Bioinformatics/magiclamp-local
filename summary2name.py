@@ -31,38 +31,40 @@ def detect_delimiter(filepath):
 def read_assembly_summary(path):
     """
     Read an NCBI assembly summary file robustly.
-    Looks for a line that starts with '#assembly_accession' or '# assembly_accession'
-    (ignoring any leading '##' comment lines) and uses it as header.
+    Works whether the header line begins with '#assembly_accession'
+    or just 'assembly_accession'.
     """
     print(f"Reading assembly summary file: {path}")
 
     header_line = None
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
-            # skip generic comments
+            # Skip pure comments (ftp info etc.)
             if line.startswith("##"):
                 continue
-            if line.startswith("assembly_accession"):
-                header_line = line.strip()
-                print(header_line)
+            # Capture header line, with or without '#'
+            if line.lstrip().startswith("assembly_accession") or line.lstrip().startswith("#assembly_accession"):
+                header_line = line.lstrip("#").strip()
                 break
-    if not header_line:
-        raise ValueError(
-            "Could not find a header line starting with 'assembly_accession' in the assembly summary file."
-        )
+
+    if header_line is None:
+        raise ValueError("Could not find a valid header line in the assembly summary file.")
 
     header_cols = re.split(r"\t+", header_line)
     print(f"Detected {len(header_cols)} header columns in assembly summary header.")
+
+    # Use that header and read the rest of the file
     df = pd.read_csv(
         path,
         sep="\t",
-        comment="#",
+        comment="##",   # skip only double-hash comments
         header=None,
         names=header_cols,
         dtype=str,
-        low_memory=False,
+        low_memory=False
     )
     return df.fillna("")
+
 
 
 def main():
