@@ -108,6 +108,9 @@ def main():
             infra = accDict[accession][1]
             print(f"Matched: {accession} -> {name}, {infra}")
             out.write(f"{ls[0]},{name},{infra}," + ",".join(ls[1:]) + "\n")
+        else:
+            if re.match(r'#', i):
+                out.write("###############################################################\n")
     out.close()
 
     # # ---------------------------
