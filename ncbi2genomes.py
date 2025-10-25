@@ -36,7 +36,7 @@ def main():
     out = open(args.output, "w")
     out.write("assembly\tbioproject\tbiosample\torganism\tstrain\tassembly_level\tgenome_rep\tseq_release\tasm_name\tasm_submitter\tgbk_accession\texcluded\tgroup\tgenome_size\tperc_gapped\tgc\treplicons\tscaffolds\tcontigs\tannotation_provider\tgenes\tcds\tnoncoding\n")
     for i in ncbi:
-        if re.match(r'^#', i):
+        if re.match(r'^#', i) or re.match(r'^assembly_accession', i):
             pass
         else:
             ls = i.rstrip().split("\t")
