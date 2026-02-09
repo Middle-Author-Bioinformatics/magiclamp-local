@@ -253,17 +253,17 @@ fi
 
 set -x
 if [[ "${genie}" == "Custom" ]]; then
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py HmmGenie   -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}/MagicLamp" -t 8 -hmm_dir "${DIR}/HMMs" -hmm_ext hmm ${EXTRA_FLAGS}
-  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/MagicLamp/hmmgenie-summary.csv -o ${OUT}/MagicLamp/hmmgenie-summary.names.csv
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py HmmGenie   -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 -hmm_dir "${DIR}/HMMs" -hmm_ext hmm ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/hmmgenie-summary.csv -o ${OUT}/hmmgenie-summary.names.csv
 elif [[ "${genie}" == "FeGenie" ]]; then
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie    -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}/MagicLamp" -t 8 ${EXTRA_FLAGS}
-  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/MagicLamp/FeGenie-geneSummary-clusters.csv -o ${OUT}/MagicLamp/FeGenie-geneSummary-clusters.names.csv
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie    -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/FeGenie-geneSummary-clusters.csv -o ${OUT}/FeGenie-geneSummary-clusters.names.csv
 elif [[ "${genie}" == "LithoGenie" ]]; then
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}/MagicLamp" -t 8 ${EXTRA_FLAGS}
-  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/MagicLamp/lithogenie-summary.csv -o ${OUT}/MagicLamp/lithogenie-summary.names.csv
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/lithogenie-summary.csv -o ${OUT}/lithogenie-summary.names.csv
 else
-  /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie  -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}/MagicLamp" -t 8 -genie "${genie}" ${EXTRA_FLAGS}
-  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/MagicLamp/${genie}genie-summary.csv -o ${OUT}/MagicLamp/${genie}genie-summary.names.csv
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie  -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 -genie "${genie}" ${EXTRA_FLAGS}
+  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/${genie}genie-summary.csv -o ${OUT}/${genie}genie-summary.names.csv
 fi
 set +x
 
@@ -281,7 +281,7 @@ sleep 2
 rm -rf "${download_dir}"
 rm -rf "${OUT}/ncbi.accessions.final.sorted.tsv"
 rm -rf "${OUT}/ncbi.accessions.tsv"
-rm -rf "${OUT}/MagicLamp/ORF_calls"
+rm -rf "${OUT}/ORF_calls"
 mv "/home/ark/MAB/magiclamp/completed/${ID}-results" "./${ID}-results"
 tar -cf "${ID}-results.tar" "${ID}-results" && gzip -f "${ID}-results.tar"
 
