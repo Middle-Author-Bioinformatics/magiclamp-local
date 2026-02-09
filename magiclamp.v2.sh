@@ -28,7 +28,7 @@ DIR="/home/ark/MAB/magiclamp/${ID}"
 OUT="/home/ark/MAB/magiclamp/completed/${ID}-results"
 FORM="${DIR}/form-data.txt"
 
-#mkdir -p "${OUT}"
+mkdir -p "${OUT}"
 
 # -------------------------
 # Parse form-data.txt lines
