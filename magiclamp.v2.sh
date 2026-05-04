@@ -120,7 +120,7 @@ download_genbank_by_taxon () {
   echo "Generating accessions from taxonomy: Genus='${genus}', Species='${species}', Strain='${strain}'"
   mkdir -p "${OUT}"
 
-  # Your ncbi2genomes.py block (as requested)
+  # Your ncbi2genomes.py block
   python3 "${NCBI2GENOMES}" \
       -n "${NCBI_ASM_TSV}" \
       -g "${genus}" \
@@ -254,16 +254,22 @@ fi
 set -x
 if [[ "${genie}" == "Custom" ]]; then
   /home/ark/MAB/bin/MagicLamp/MagicLamp.py HmmGenie   -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 -hmm_dir "${DIR}/HMMs" -hmm_ext hmm ${EXTRA_FLAGS}
-  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/hmmgenie-summary.csv -o ${OUT}/hmmgenie-summary.names.csv
+#  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/hmmgenie-summary.csv -o ${OUT}/hmmgenie-summary.names.csv
 elif [[ "${genie}" == "FeGenie" ]]; then
   /home/ark/MAB/bin/MagicLamp/MagicLamp.py FeGenie    -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
-  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/FeGenie-geneSummary-clusters.csv -o ${OUT}/FeGenie-geneSummary-clusters.names.csv
+#  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/FeGenie-geneSummary-clusters.csv -o ${OUT}/FeGenie-geneSummary-clusters.names.csv
 elif [[ "${genie}" == "LithoGenie" ]]; then
   /home/ark/MAB/bin/MagicLamp/MagicLamp.py LithoGenie -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
-  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/lithogenie-summary.csv -o ${OUT}/lithogenie-summary.names.csv
+#  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/lithogenie-summary.csv -o ${OUT}/lithogenie-summary.names.csv
+elif [[ "${genie}" == "Lucifer" ]]; then
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py Lucifer -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
+#  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/lithogenie-summary.csv -o ${OUT}/lithogenie-summary.names.csv
+elif [[ "${genie}" == "ATPGenie" ]]; then
+  /home/ark/MAB/bin/MagicLamp/MagicLamp.py ATPGenie -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 ${EXTRA_FLAGS}
+#  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/lithogenie-summary.csv -o ${OUT}/lithogenie-summary.names.csv
 else
   /home/ark/MAB/bin/MagicLamp/MagicLamp.py OmniGenie  -bin_dir "${BINDIR}" -bin_ext "${BIN_EXT}" -out "${OUT}" -t 8 -genie "${genie}" ${EXTRA_FLAGS}
-  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/${genie}genie-summary.csv -o ${OUT}/${genie}genie-summary.names.csv
+#  /home/ark/MAB/bin/magiclamp-local/summary2name.py -a ${NCBI_ASM_TSV} -i ${OUT}/${genie}genie-summary.csv -o ${OUT}/${genie}genie-summary.names.csv
 fi
 set +x
 
