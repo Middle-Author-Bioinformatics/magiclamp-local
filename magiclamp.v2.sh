@@ -118,7 +118,7 @@ download_genbank_by_taxon () {
   fi
 
   echo "Generating accessions from taxonomy: Genus='${genus}', Species='${species}', Strain='${strain}'"
-  mkdir -p "${OUT}"
+#  mkdir -p "${OUT}"
 
   # Your ncbi2genomes.py block
   python3 "${NCBI2GENOMES}" \
@@ -126,14 +126,14 @@ download_genbank_by_taxon () {
       -g "${genus}" \
       -s "${species:-.}" \
       -t "${strain:-.}" \
-      -o  "${OUT}/ncbi.matches.tsv" \
-      -o2 "${OUT}/ncbi.accessions.tsv" || return 2
+      -o  "${DIR}/ncbi.matches.tsv" \
+      -o2 "${DIR}/ncbi.accessions.tsv" || return 2
 
   # Normalize -> final sorted list
-  finalize_accessions "${OUT}/ncbi.accessions.tsv" "${OUT}/ncbi.accessions.final.sorted.tsv" || return 2
+  finalize_accessions "${DIR}/ncbi.accessions.tsv" "${DIR}/ncbi.accessions.final.sorted.tsv" || return 2
 
   # Download GenBank with bit-dl
-  download_genbank_by_accession "${OUT}/ncbi.accessions.final.sorted.tsv"
+  download_genbank_by_accession "${DIR}/ncbi.accessions.final.sorted.tsv"
 }
 
 # --------------------------------------------------------------------
@@ -145,8 +145,8 @@ if [[ "${mode}" == "accession" ]]; then
   echo "[DEBUG] resolved path='${src_accession_file}'"
   [[ -s "${src_accession_file}" ]] || { echo "ERROR: missing accession file: ${src_accession_file}"; exit 1; }
 
-  finalize_accessions "${src_accession_file}" "${OUT}/ncbi.accessions.final.sorted.tsv" || exit 1
-  download_genbank_by_accession "${OUT}/ncbi.accessions.final.sorted.tsv" || { echo "ERROR: accession download failed"; exit 1; }
+  finalize_accessions "${src_accession_file}" "${DIR}/ncbi.accessions.final.sorted.tsv" || exit 1
+  download_genbank_by_accession "${DIR}/ncbi.accessions.final.sorted.tsv" || { echo "ERROR: accession download failed"; exit 1; }
 
 elif [[ "${mode}" == "taxon" ]]; then
   download_genbank_by_taxon "${genus}" "${species}" "${strain}" || { echo "ERROR: taxon download failed"; exit 1; }
