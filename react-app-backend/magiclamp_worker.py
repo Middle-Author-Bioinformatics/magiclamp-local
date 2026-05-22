@@ -19,24 +19,21 @@ What it does
 
 Frontend-required result names
 ------------------------------
-The React results viewer (client/src/pages/results.tsx) fetches:
+The React results viewer (client/src/pages/results.tsx) fetches the
+following files per submitted Genie:
 
-  - <Genie>-summary.csv         (per-Genie summary; canonical names below)
-  - FeGenie-heatmap-data.csv    (only when FeGenie was the Genie)
-  - <slug>-results.tar.gz       (full MagicLamp output directory)
+  - <lower(genie)>-summary.csv     per-Genie HMM hit table
+  - <lower(genie)>.heatmap.csv     per-Genie categories × genomes counts
+  - <lower(genie)>-report.html     per-Genie Plotly report (heatmap-driven)
+  - <slug>-results.tar.gz          full MagicLamp output (one folder per Genie)
 
-Canonical summary filenames (matches client/src/pages/results.tsx):
-
-  FeGenie     -> FeGenie-geneSummary-clusters.csv
-  Custom      -> hmmgenie-summary.csv
-  OmniGenie   -> omnigenie-summary.csv
-  <Other>     -> <lowercase-id>-summary.csv     e.g. lithogenie-summary.csv
+Custom (HmmGenie) is the only special case:
+  hmmgenie-summary.csv / hmmgenie.heatmap.csv / hmmgenie-report.html
 
 This script also uploads:
 
-  - status.json         (state machine + result_url)
-  - run.log             (stdout/stderr from MagicLamp)
-  - report.html         (Plotly visualization, when a heatmap CSV is found)
+  - status.json     state machine + per-Genie status array + result_url
+  - run.log         stdout/stderr from every MagicLamp invocation in the job
 
 Typical cron usage
 ------------------
@@ -95,38 +92,67 @@ GENBANK_PRODUCT_RE = re.compile(r"/product=")
 GENBANK_GENE_QUAL_RE = re.compile(r"/gene=")
 
 
-# ---------- Genie dispatch table --------------------------------------------
-# This mirrors the branches in magiclamp.v2.sh. Keys are the exact `Genie:`
-# string written by the React app (and the MagicLamp.py subcommand name);
-# values describe how the worker should invoke MagicLamp and how the run's
-# canonical summary CSV is named.
+# ---------- Genie dispatch ---------------------------------------------------
 #
-# subcommand       — argv[1] for MagicLamp.py
-# summary_filename — exact filename the frontend will fetch from S3
-# heatmap_filename — optional canonical heatmap CSV (None when MagicLamp does
-#                    not emit one; FeGenie does)
-# expects_hmm_dir  — when True, the worker passes -hmm_dir <uploaded HMMs> and
-#                    requires at least one .hmm in the upload (HmmGenie/Custom).
-# is_omni          — when True, runs the entire library; output summary is
-#                    materialised as omnigenie-summary.csv by concatenating
-#                    per-Genie outputs.
-GENIE_DISPATCH = {
-    "FeGenie":      {"subcommand": "FeGenie",      "summary_filename": "FeGenie-geneSummary-clusters.csv", "heatmap_filename": "FeGenie-heatmap-data.csv"},
-    "LithoGenie":   {"subcommand": "LithoGenie",   "summary_filename": "lithogenie-summary.csv"},
-    "RiboGenie":    {"subcommand": "RiboGenie",    "summary_filename": "ribogenie-summary.csv"},
-    "PlasticGenie": {"subcommand": "PlasticGenie", "summary_filename": "plasticgenie-summary.csv"},
-    "WspGenie":     {"subcommand": "WspGenie",     "summary_filename": "wspgenie-summary.csv"},
-    "Lucifer":      {"subcommand": "Lucifer",      "summary_filename": "lucifer-summary.csv"},
-    "MagnetoGenie": {"subcommand": "MagnetoGenie", "summary_filename": "magnetogenie-summary.csv"},
-    "GasGenie":     {"subcommand": "GasGenie",     "summary_filename": "gasgenie-summary.csv"},
-    "RosGenie":     {"subcommand": "RosGenie",     "summary_filename": "rosgenie-summary.csv"},
-    "ATPGenie":     {"subcommand": "ATPGenie",     "summary_filename": "atpgenie-summary.csv"},
-    "CircGenie":    {"subcommand": "CircGenie",    "summary_filename": "circgenie-summary.csv"},
-    "PolGenie":     {"subcommand": "PolGenie",     "summary_filename": "polgenie-summary.csv"},
-    "MnGenie":      {"subcommand": "MnGenie",      "summary_filename": "mngenie-summary.csv"},
-    "Custom":       {"subcommand": "HmmGenie",     "summary_filename": "hmmgenie-summary.csv", "expects_hmm_dir": True},
-    "OmniGenie":    {"subcommand": "OmniGenie",    "summary_filename": "omnigenie-summary.csv", "is_omni": True},
+# Every Genie writes the same two output files with predictable names:
+#
+#   <lower(genie)>-summary.csv     organism,locus,HMM,evalue,bitscore,clusterID,ORF_sequence
+#   <lower(genie)>.heatmap.csv     X,<genome1>,<genome2>,...      (categories × genomes counts)
+#
+# (The earlier worker had FeGenie-specific summary/heatmap filenames hard-coded
+# into a per-Genie dispatch table. That idiosyncrasy is from the legacy FeGenie
+# web app — the modern MagicLamp suite uses uniform names across every Genie,
+# so we collapse the table into the two helpers below.)
+#
+# Two Genies need argv tweaks:
+#
+#   * "Custom"  — runs the HmmGenie subcommand and requires the user's uploaded
+#                .hmm files (passed via -hmm_dir / -hmm_ext).
+#   * Anything not in NAMED_GENIES is dispatched through OmniGenie with
+#       -genie <Name>
+#     so the same algorithm runs against that Genie's HMM set. This matches the
+#     bash dispatch in magiclamp.v2.sh exactly.
+
+# Genies that have a dedicated MagicLamp.py subcommand (i.e., MagicLamp.py FeGenie ...).
+# Anything not in this set is routed through OmniGenie -genie <Name>.
+NAMED_GENIES = {
+    "FeGenie",
+    "LithoGenie",
+    "Lucifer",
+    "ATPGenie",
 }
+
+
+def summary_filename(genie: str) -> str:
+    """Canonical summary CSV name for any Genie."""
+    if genie == "Custom":
+        return "hmmgenie-summary.csv"
+    return f"{genie.lower()}-summary.csv"
+
+
+def heatmap_filename(genie: str) -> str:
+    """Canonical heatmap CSV name for any Genie."""
+    if genie == "Custom":
+        return "hmmgenie.heatmap.csv"
+    return f"{genie.lower()}.heatmap.csv"
+
+
+def magiclamp_subcommand(genie: str) -> tuple[str, list[str]]:
+    """Return (subcommand, extra_argv_tail) for a given Genie.
+
+    Mirrors the bash logic:
+      Custom    -> HmmGenie  (caller adds -hmm_dir / -hmm_ext)
+      FeGenie   -> FeGenie
+      LithoGenie -> LithoGenie
+      Lucifer   -> Lucifer
+      ATPGenie  -> ATPGenie
+      <other>   -> OmniGenie -genie <Genie>
+    """
+    if genie == "Custom":
+        return "HmmGenie", []
+    if genie in NAMED_GENIES:
+        return genie, []
+    return "OmniGenie", ["-genie", genie]
 
 
 # ---------- Manifest --------------------------------------------------------
@@ -134,15 +160,25 @@ GENIE_DISPATCH = {
 class JobManifest:
     """Parsed contents of form-data.txt.
 
-    The React app writes exactly the keys below. Anything else found in the
-    file is preserved in raw_options for forward-compatibility.
+    The React app writes either:
+      Genie:  <one Genie name>          (legacy, single-Genie submission)
+      Genies: <comma-separated list>    (current, supports multi-select)
+
+    Both are normalized into `genies: list[str]` here. `genie` (singular)
+    remains as a convenience alias for the first selected Genie, used in
+    log lines and the legacy single-Genie status payload.
     """
     slug: str
-    genie: str = "FeGenie"
+    genies: list[str] = field(default_factory=lambda: ["FeGenie"])
     mode: str = "fasta_or_genbank"
     submitter_name: str = ""   # legacy; UI no longer collects this
     submitter_email: str = ""  # legacy; UI no longer collects this
     raw_options: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def genie(self) -> str:
+        """First selected Genie, or 'FeGenie' if somehow empty."""
+        return self.genies[0] if self.genies else "FeGenie"
 
 
 # ---------- Helpers ---------------------------------------------------------
@@ -241,15 +277,17 @@ def download_prefix(s3, bucket: str, prefix: str, dest: Path) -> list[Path]:
 def parse_manifest(path: Path, fallback_slug: str) -> JobManifest:
     """Parse the React app's form-data.txt.
 
-    The browser writes lines like:
-        Genie: FeGenie
+    Recognised keys:
         Job Slug: UQuL6n4WhB
-        Mode: fasta_or_genbank
-    plus a few legacy keys (Name:, Email:, Accession List:, Genus:, Species:,
-    Strain:) — we read all of them but only `Genie:` and `Job Slug:` change
-    worker behaviour.
+        Genies:   FeGenie,RiboGenie,LithoGenie     (preferred; multi-select)
+        Genie:    FeGenie                          (legacy single-Genie form)
+        Mode:     fasta_or_genbank
+    Plus a few legacy keys (Name:, Email:, Accession List:, Genus:, Species:,
+    Strain:) which are preserved in raw_options but do not affect dispatch.
     """
     manifest = JobManifest(slug=fallback_slug)
+    explicit_genies: list[str] | None = None
+    legacy_single: str | None = None
 
     with path.open("r", encoding="utf-8", errors="replace") as handle:
         for line in handle:
@@ -264,8 +302,12 @@ def parse_manifest(path: Path, fallback_slug: str) -> JobManifest:
 
             if key == "Job Slug":
                 manifest.slug = value or fallback_slug
+            elif key == "Genies":
+                explicit_genies = [
+                    g.strip() for g in value.split(",") if g.strip()
+                ]
             elif key == "Genie":
-                manifest.genie = value or manifest.genie
+                legacy_single = value or None
             elif key == "Mode":
                 manifest.mode = value or manifest.mode
             elif key == "Name":
@@ -275,6 +317,21 @@ def parse_manifest(path: Path, fallback_slug: str) -> JobManifest:
             else:
                 # Preserve any other keys for forward-compat or debugging.
                 manifest.raw_options[key] = value
+
+    # Genies (plural) wins if both forms appear.
+    if explicit_genies:
+        manifest.genies = explicit_genies
+    elif legacy_single:
+        manifest.genies = [legacy_single]
+
+    # De-duplicate while preserving order.
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for g in manifest.genies:
+        if g not in seen:
+            seen.add(g)
+            deduped.append(g)
+    manifest.genies = deduped
 
     return manifest
 
@@ -399,25 +456,32 @@ def prepare_hmms(hmms: list[Path], hmm_dir: Path) -> list[Path]:
 # ---------- Command building ------------------------------------------------
 def build_magiclamp_command(
     args,
-    manifest: JobManifest,
-    spec: dict,
+    genie: str,
     bins_dir: Path,
     out_dir: Path,
     bin_ext: str,
     hmm_dir: Path | None,
 ) -> list[str]:
-    """Assemble the MagicLamp.py argv for this job.
+    """Assemble the MagicLamp.py argv for one Genie.
 
-    The exact argv mirrors what magiclamp.v2.sh runs locally, so the
-    web-driven workflow has the same semantics as the manual one.
+    The argv mirrors the bash dispatch in magiclamp.v2.sh:
+
+      Custom    -> MagicLamp.py HmmGenie  ... -hmm_dir <dir> -hmm_ext hmm
+      FeGenie   -> MagicLamp.py FeGenie   ...
+      LithoGenie-> MagicLamp.py LithoGenie ...
+      Lucifer   -> MagicLamp.py Lucifer   ...
+      ATPGenie  -> MagicLamp.py ATPGenie  ...
+      <other>   -> MagicLamp.py OmniGenie ... -genie <Genie>
     """
+    subcommand, extra_tail = magiclamp_subcommand(genie)
+
     cmd: list[str] = []
     if args.command_prefix:
         cmd.extend(args.command_prefix.split())
 
     cmd.extend([
         args.magiclamp_bin,
-        spec["subcommand"],
+        subcommand,
         "-bin_dir", str(bins_dir),
         "-bin_ext", bin_ext,
         "-out", str(out_dir),
@@ -425,14 +489,15 @@ def build_magiclamp_command(
     ])
 
     if bin_ext == "gbk":
-        # MagicLamp accepts a --gbk flag for genbank input (same as FeGenie).
+        # MagicLamp accepts --gbk for GenBank input.
         cmd.append("--gbk")
 
-    if spec.get("expects_hmm_dir"):
+    if genie == "Custom":
         if hmm_dir is None:
-            raise RuntimeError(f"{manifest.genie} needs uploaded .hmm files but none were found.")
+            raise RuntimeError("HmmGenie (Custom) needs uploaded .hmm files but none were found.")
         cmd.extend(["-hmm_dir", str(hmm_dir), "-hmm_ext", "hmm"])
 
+    cmd.extend(extra_tail)  # e.g., -genie <Genie> for OmniGenie-routed names
     return cmd
 
 
@@ -445,14 +510,6 @@ def run_command(cmd: list[str], log_handle) -> None:
 
 
 # ---------- Output staging --------------------------------------------------
-def first_existing(out_dir: Path, names: Iterable[str]) -> Path | None:
-    for name in names:
-        p = out_dir / name
-        if p.exists():
-            return p
-    return None
-
-
 def first_existing_recursive(root: Path, names: Iterable[str]) -> Path | None:
     wanted = {name.lower() for name in names}
     for path in root.rglob("*"):
@@ -461,45 +518,32 @@ def first_existing_recursive(root: Path, names: Iterable[str]) -> Path | None:
     return None
 
 
-def find_summary_csv(out_dir: Path, expected_name: str, fallback_globs: Iterable[str]) -> Path | None:
-    """Find the summary CSV for a Genie.
+def find_summary_csv(out_dir: Path, genie: str) -> Path | None:
+    """Find the per-Genie summary CSV emitted by MagicLamp.py.
 
-    Order of preference:
-      1) Exact `expected_name` directly in out_dir.
-      2) Any file matching `expected_name` anywhere under out_dir (depth-first).
-      3) Any file matching one of the fallback glob patterns under out_dir.
+    MagicLamp writes <lower(genie)>-summary.csv (or hmmgenie-summary.csv for
+    Custom). We look for that file at the top of `out_dir` first, then
+    recursively as a safety net for older MagicLamp versions that nested
+    outputs one directory deeper.
     """
-    direct = out_dir / expected_name
+    expected = summary_filename(genie)
+    direct = out_dir / expected
     if direct.exists():
         return direct
-    recursive = first_existing_recursive(out_dir, [expected_name])
-    if recursive:
-        return recursive
-    for glob in fallback_globs:
-        for match in out_dir.rglob(glob):
-            if match.is_file():
-                return match
-    return None
+    return first_existing_recursive(out_dir, [expected])
 
 
-def find_heatmap_csv(out_dir: Path) -> Path | None:
-    """FeGenie writes FeGenie-heatmap-data.csv; other Genies typically don't.
-    Look for any heatmap-style CSV emitted by MagicLamp for any Genie.
+def find_heatmap_csv(out_dir: Path, genie: str) -> Path | None:
+    """Find the per-Genie heatmap CSV emitted by MagicLamp.py.
+
+    MagicLamp writes <lower(genie)>.heatmap.csv (or hmmgenie.heatmap.csv for
+    Custom). Same lookup pattern as the summary file.
     """
-    candidates = [
-        "FeGenie-heatmap-data.csv",
-        "heatmap-data.csv",
-        "heatmap.csv",
-    ]
-    for name in candidates:
-        hit = first_existing_recursive(out_dir, [name])
-        if hit:
-            return hit
-    # Loose glob match
-    for match in out_dir.rglob("*heatmap*.csv"):
-        if match.is_file():
-            return match
-    return None
+    expected = heatmap_filename(genie)
+    direct = out_dir / expected
+    if direct.exists():
+        return direct
+    return first_existing_recursive(out_dir, [expected])
 
 
 def normalize_csv(src: Path, dest: Path) -> None:
@@ -531,18 +575,16 @@ def normalize_heatmap(src: Path, dest: Path) -> None:
         writer.writerows(rows)
 
 
-def write_fallback_report(dest: Path, manifest: JobManifest, summary_csv: Path, heatmap_csv: Path | None) -> None:
+def write_fallback_report(dest: Path, slug: str, genie: str, summary_csv: Path, heatmap_csv: Path | None) -> None:
     """Tiny standalone HTML used when no Plotly report generator is available."""
-    extras = ""
-    if heatmap_csv:
-        extras = f"<li>{heatmap_csv.name}</li>"
+    extras = f"<li>{heatmap_csv.name}</li>" if heatmap_csv else ""
     dest.write_text(
         f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MagicLamp Report {manifest.slug}</title>
+  <title>MagicLamp Report {slug} — {genie}</title>
   <style>
     body {{ font-family: Inter, system-ui, sans-serif; margin: 2rem; line-height: 1.5; color: #241f1c; }}
     code {{ background: #f4eee8; padding: 0.15rem 0.35rem; border-radius: 4px; }}
@@ -550,11 +592,11 @@ def write_fallback_report(dest: Path, manifest: JobManifest, summary_csv: Path, 
   </style>
 </head>
 <body>
-  <h1>MagicLamp report</h1>
+  <h1>MagicLamp report — {genie}</h1>
   <div class="card">
-    <p><strong>Job:</strong> <code>{manifest.slug}</code></p>
-    <p><strong>Genie:</strong> {manifest.genie}</p>
-    <p>Interactive visualizations are available in the MagicLamp Web Studio results page.</p>
+    <p><strong>Job:</strong> <code>{slug}</code></p>
+    <p><strong>Genie:</strong> {genie}</p>
+    <p>Interactive visualizations are available in the MagicLamp results page.</p>
     <ul>
       <li>{summary_csv.name}</li>
       {extras}
@@ -570,43 +612,25 @@ def write_fallback_report(dest: Path, manifest: JobManifest, summary_csv: Path, 
 def maybe_generate_report(
     args,
     job_root: Path,
-    out_dir: Path,
     report_dest: Path,
-    manifest: JobManifest,
+    slug: str,
+    genie: str,
     summary_csv: Path,
     heatmap_csv: Path | None,
     log_handle,
 ) -> None:
-    """Try to produce a Plotly report; fall back to a tiny HTML if unavailable.
+    """Generate a Plotly HTML report for one Genie, with graceful fallbacks.
 
-    Reuses the FeGenie report generator (which is Genie-agnostic — it just
-    needs a heatmap-shape CSV with categories in rows and genomes in columns).
+    Reuses magiclamp_report.py (Genie-agnostic — categories × genomes heatmap).
+    Falls back to a static HTML stub if no heatmap CSV was produced or the
+    report script is unavailable.
     """
-    # 1. If MagicLamp.py already wrote an HTML report, use it.
-    existing = first_existing_recursive(
-        job_root,
-        [
-            "magiclamp-report.html",
-            "MagicLamp-report.html",
-            "fegenie-report.html",
-            "FeGenie-report.html",
-            "report.html",
-        ],
-    )
-    if existing:
-        logging.info("Using MagicLamp HTML report: %s", existing)
-        shutil.copy2(existing, report_dest)
-        return
-
-    # 2. Plotly report — only useful when a heatmap-shape CSV exists.
     if heatmap_csv is not None:
         candidate_scripts: list[Path] = []
         if args.report_script:
             candidate_scripts.append(Path(args.report_script))
         candidate_scripts.append(Path(__file__).resolve().parent / "magiclamp_report.py")
-        candidate_scripts.append(Path(__file__).resolve().parent / "fegenie_report.py")
         candidate_scripts.append(Path.cwd() / "magiclamp_report.py")
-        candidate_scripts.append(Path.cwd() / "fegenie_report.py")
 
         seen: set[Path] = set()
         for script in candidate_scripts:
@@ -615,18 +639,20 @@ def maybe_generate_report(
                 continue
             seen.add(script)
             if script.exists():
-                logging.info("Generating Plotly report with: %s", script)
+                logging.info("Generating Plotly report for %s with: %s", genie, script)
                 cmd: list[str] = []
                 if args.command_prefix:
                     cmd.extend(args.command_prefix.split())
                 cmd.extend(["python", str(script), str(heatmap_csv), "-o", str(report_dest)])
-                run_command(cmd, log_handle)
+                try:
+                    run_command(cmd, log_handle)
+                except RuntimeError as e:
+                    logging.warning("Report generation failed for %s: %s", genie, e)
                 if report_dest.exists():
                     return
 
-    # 3. Fallback static HTML.
-    logging.info("Writing fallback static report.")
-    write_fallback_report(report_dest, manifest, summary_csv, heatmap_csv)
+    logging.info("Writing fallback static report for %s.", genie)
+    write_fallback_report(report_dest, slug, genie, summary_csv, heatmap_csv)
 
 
 # ---------- Tarball ---------------------------------------------------------
@@ -677,84 +703,117 @@ def process_job(args, s3, prefix: str) -> None:
         manifest_path = job_dir / "form-data.txt"
         manifest = parse_manifest(manifest_path, fallback_slug=slug)
 
-        spec = GENIE_DISPATCH.get(manifest.genie)
-        if spec is None:
-            raise RuntimeError(
-                f"Unknown Genie '{manifest.genie}'. Update GENIE_DISPATCH in magiclamp_worker.py."
-            )
+        if not manifest.genies:
+            raise RuntimeError("Manifest did not declare any Genies.")
+
+        # Validate every Genie has a recognised dispatch before we start.
+        for g in manifest.genies:
+            magiclamp_subcommand(g)  # raises nothing; OmniGenie path catches the unknown case
 
         genomes, hmms = split_inputs(job_dir)
         bin_ext, normalized = prepare_bins(genomes, bins_dir)
 
+        needs_hmm = any(g == "Custom" for g in manifest.genies)
         used_hmm_dir: Path | None = None
-        if spec.get("expects_hmm_dir"):
+        if needs_hmm:
             if not hmms:
-                raise RuntimeError("HmmGenie needs at least one .hmm file in the upload.")
+                raise RuntimeError("HmmGenie (Custom) needs at least one .hmm file in the upload.")
             prepare_hmms(hmms, hmm_dir)
             used_hmm_dir = hmm_dir
 
+        # Per-Genie bookkeeping for status.json. Order preserved from manifest.
+        per_genie_status: list[dict] = []
+        per_genie_summary_paths: list[Path] = []
+        per_genie_heatmap_paths: list[Path] = []
+        per_genie_report_paths: list[Path] = []
+
+        final_dir.mkdir(parents=True, exist_ok=True)
+
         with log_path.open("w", encoding="utf-8") as log_handle:
             log_handle.write(f"MagicLamp worker started {utc_now()}\n")
-            log_handle.write(f"Slug:   {slug}\n")
-            log_handle.write(f"Genie:  {manifest.genie}\n")
+            log_handle.write(f"Slug:    {slug}\n")
+            log_handle.write(f"Genies:  {', '.join(manifest.genies)}\n")
             log_handle.write(f"Genomes: {[p.name for p in normalized]}\n")
             if used_hmm_dir:
-                log_handle.write(f"HMMs:   {[p.name for p in hmms]}\n")
+                log_handle.write(f"HMMs:    {[p.name for p in hmms]}\n")
 
-            cmd = build_magiclamp_command(args, manifest, spec, bins_dir, out_dir, bin_ext, used_hmm_dir)
-            run_command(cmd, log_handle)
+            # Run each Genie sequentially. Each one writes into its own
+            # subdirectory so their summary/heatmap CSVs cannot collide.
+            for genie in manifest.genies:
+                log_handle.write(f"\n===== Running Genie: {genie} =====\n")
+                log_handle.flush()
 
-            final_dir.mkdir(parents=True, exist_ok=True)
+                genie_out = out_dir / genie
+                genie_out.mkdir(parents=True, exist_ok=True)
 
-            # 1) Summary CSV (always)
-            expected_summary = spec["summary_filename"]
-            fallback_globs = [
-                expected_summary,
-                f"*{manifest.genie.lower()}*summary*.csv",
-                f"*{spec['subcommand'].lower()}*summary*.csv",
-                "*summary*.csv",
-                "*geneSummary*.csv",
-            ]
-            summary_src = find_summary_csv(out_dir, expected_summary, fallback_globs)
-            if not summary_src:
-                raise RuntimeError(
-                    f"Could not find a summary CSV for {manifest.genie} "
-                    f"(expected '{expected_summary}' under {out_dir})."
+                cmd = build_magiclamp_command(
+                    args, genie, bins_dir, genie_out, bin_ext, used_hmm_dir
                 )
-            summary_dest = final_dir / expected_summary
-            normalize_csv(summary_src, summary_dest)
+                try:
+                    run_command(cmd, log_handle)
+                except RuntimeError as run_err:
+                    logging.warning("Genie %s failed: %s", genie, run_err)
+                    per_genie_status.append({"genie": genie, "state": "failed", "error": str(run_err)})
+                    continue
 
-            # 2) Heatmap CSV (FeGenie only, but try anyway)
-            heatmap_dest: Path | None = None
-            heatmap_src = find_heatmap_csv(out_dir)
-            if heatmap_src:
-                heatmap_dest = final_dir / "FeGenie-heatmap-data.csv"
-                normalize_heatmap(heatmap_src, heatmap_dest)
+                # Collect the canonical outputs.
+                summary_src = find_summary_csv(genie_out, genie)
+                if not summary_src:
+                    msg = (
+                        f"Could not find {summary_filename(genie)} under {genie_out}."
+                    )
+                    logging.warning(msg)
+                    per_genie_status.append({"genie": genie, "state": "failed", "error": msg})
+                    continue
 
-            # 3) HTML report
-            report_dest = final_dir / "report.html"
-            maybe_generate_report(args, job_root, out_dir, report_dest, manifest, summary_dest, heatmap_dest, log_handle)
+                summary_dest = final_dir / summary_filename(genie)
+                normalize_csv(summary_src, summary_dest)
+                per_genie_summary_paths.append(summary_dest)
 
-        # 4) Tarball of the raw MagicLamp output (the frontend's
-        #    "Full tarball" download).
+                heatmap_dest: Path | None = None
+                heatmap_src = find_heatmap_csv(genie_out, genie)
+                if heatmap_src:
+                    heatmap_dest = final_dir / heatmap_filename(genie)
+                    normalize_heatmap(heatmap_src, heatmap_dest)
+                    per_genie_heatmap_paths.append(heatmap_dest)
+
+                # Per-Genie Plotly report.
+                report_dest = final_dir / f"{genie.lower()}-report.html"
+                maybe_generate_report(
+                    args, job_root, report_dest, slug, genie,
+                    summary_dest, heatmap_dest, log_handle,
+                )
+                per_genie_report_paths.append(report_dest)
+
+                per_genie_status.append({
+                    "genie": genie,
+                    "state": "complete",
+                    "summary": summary_filename(genie),
+                    "heatmap": heatmap_filename(genie) if heatmap_dest else None,
+                    "report": f"{genie.lower()}-report.html",
+                })
+
+        if not per_genie_summary_paths:
+            raise RuntimeError("All Genies failed; no summary CSVs were produced.")
+
+        # Tarball the entire raw MagicLamp output tree (one folder per Genie).
         tar_path = job_root / f"{slug}-results.tar.gz"
         make_tarball(out_dir, tar_path)
 
-        # 5) Upload everything to S3.
-        upload_file(s3, args.results_bucket, f"{result_prefix}{expected_summary}", summary_dest, "text/csv")
-        if heatmap_dest:
-            upload_file(s3, args.results_bucket, f"{result_prefix}FeGenie-heatmap-data.csv", heatmap_dest, "text/csv")
-        upload_file(s3, args.results_bucket, f"{result_prefix}report.html", report_dest, "text/html")
-        # NOTE: the tarball is uploaded one level above the prefix because
-        # results.tsx fetches it as `${publicResults}/<slug>-results.tar.gz`.
+        # Upload every per-Genie summary + heatmap + report, plus run.log + tarball.
+        for p in per_genie_summary_paths:
+            upload_file(s3, args.results_bucket, f"{result_prefix}{p.name}", p, "text/csv")
+        for p in per_genie_heatmap_paths:
+            upload_file(s3, args.results_bucket, f"{result_prefix}{p.name}", p, "text/csv")
+        for p in per_genie_report_paths:
+            upload_file(s3, args.results_bucket, f"{result_prefix}{p.name}", p, "text/html")
+        # The tarball lives one level above the prefix — matches results.tsx.
         upload_file(s3, args.results_bucket, f"{slug}-results.tar.gz", tar_path, "application/gzip")
         upload_file(s3, args.results_bucket, f"{result_prefix}run.log", log_path, "text/plain")
 
-        result_url = f"{args.app_url.rstrip('/')}/#magiclamp/results-{slug}" if args.app_url else ""
-
-        files_uploaded = [expected_summary, "report.html", "run.log"]
-        if heatmap_dest:
-            files_uploaded.append("FeGenie-heatmap-data.csv")
+        result_url = (
+            f"{args.app_url.rstrip('/')}/#magiclamp/results-{slug}" if args.app_url else ""
+        )
 
         put_json(
             s3,
@@ -762,17 +821,20 @@ def process_job(args, s3, prefix: str) -> None:
             status_key,
             {
                 "slug": slug,
-                "genie": manifest.genie,
+                "genies": manifest.genies,
+                "per_genie": per_genie_status,
                 "state": "complete",
                 "completed_at": utc_now(),
                 "result_prefix": result_prefix,
                 "result_url": result_url,
-                "files": files_uploaded,
                 "tarball": f"{slug}-results.tar.gz",
             },
         )
 
-        logging.info("Completed job %s -> s3://%s/%s", slug, args.results_bucket, result_prefix)
+        logging.info(
+            "Completed job %s (%d Genie(s)) -> s3://%s/%s",
+            slug, len(manifest.genies), args.results_bucket, result_prefix,
+        )
 
     except Exception as e:
         logging.exception("Job %s failed", slug)
@@ -782,7 +844,7 @@ def process_job(args, s3, prefix: str) -> None:
             status_key,
             {
                 "slug": slug,
-                "genie": manifest.genie if manifest else "unknown",
+                "genies": manifest.genies if manifest else [],
                 "state": "failed",
                 "failed_at": utc_now(),
                 "error": str(e),
