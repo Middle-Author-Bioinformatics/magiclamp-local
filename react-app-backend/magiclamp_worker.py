@@ -127,14 +127,14 @@ def summary_filename(genie: str) -> str:
     """Canonical summary CSV name for any Genie."""
     if genie == "Custom":
         return "hmmgenie-summary.csv"
-    return f"{genie.lower()}-summary.csv"
+    return f"{genie}-summary.csv"
 
 
 def heatmap_filename(genie: str) -> str:
     """Canonical heatmap CSV name for any Genie."""
     if genie == "Custom":
         return "hmmgenie.heatmap.csv"
-    return f"{genie.lower()}.heatmap.csv"
+    return f"{genie}.heatmap.csv"
 
 
 def magiclamp_subcommand(genie: str) -> tuple[str, list[str]]:
@@ -778,7 +778,7 @@ def process_job(args, s3, prefix: str) -> None:
                     per_genie_heatmap_paths.append(heatmap_dest)
 
                 # Per-Genie Plotly report.
-                report_dest = final_dir / f"{genie.lower()}-report.html"
+                report_dest = final_dir / f"{genie}-report.html"
                 maybe_generate_report(
                     args, job_root, report_dest, slug, genie,
                     summary_dest, heatmap_dest, log_handle,
@@ -790,7 +790,7 @@ def process_job(args, s3, prefix: str) -> None:
                     "state": "complete",
                     "summary": summary_filename(genie),
                     "heatmap": heatmap_filename(genie) if heatmap_dest else None,
-                    "report": f"{genie.lower()}-report.html",
+                    "report": f"{genie}-report.html",
                 })
 
         if not per_genie_summary_paths:
