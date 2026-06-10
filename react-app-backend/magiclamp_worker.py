@@ -120,6 +120,20 @@ NAMED_GENIES = {
     "LithoGenie",
     "Lucifer",
     "ATPGenie",
+    "WspGenie",
+    "RosGenie",
+    "PolGenie",
+    "GasGenie",
+    "RnfGenie",
+    "PlasticGenie",
+    "MagnetoGenie",
+    "CrisprGenie",
+    "AbxGenie",
+    "MotiliGenie",
+    "ResistiGenie",
+    "SporeGenie",
+    "BTEXGenie",
+    "PortGenie"
 }
 
 
