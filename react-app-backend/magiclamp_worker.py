@@ -130,10 +130,11 @@ NAMED_GENIES = {
     "CrisprGenie",
     "AbxGenie",
     "MotiliGenie",
+    "RiboGenie",
     "ResistiGenie",
     "SporeGenie",
     "BTEXGenie",
-    "PortGenie"
+    "PortGenie",
 }
 
 
@@ -155,12 +156,14 @@ def magiclamp_subcommand(genie: str) -> tuple[str, list[str]]:
     """Return (subcommand, extra_argv_tail) for a given Genie.
 
     Mirrors the bash logic:
-      Custom    -> HmmGenie  (caller adds -hmm_dir / -hmm_ext)
-      FeGenie   -> FeGenie
-      LithoGenie -> LithoGenie
-      Lucifer   -> Lucifer
-      ATPGenie  -> ATPGenie
-      <other>   -> OmniGenie -genie <Genie>
+      Custom              -> HmmGenie  (caller adds -hmm_dir / -hmm_ext)
+      <name in NAMED_GENIES> -> <Genie>     (its own MagicLamp.py subcommand)
+      <other>             -> OmniGenie -genie <Genie>
+
+    As of June 2026 NAMED_GENIES includes the original named subcommands
+    (FeGenie, LithoGenie, Lucifer, ATPGenie, RnfGenie, PortGenie, ...) plus
+    the five PGL-survey-derived Genies that ship their own subcommand
+    (AbxGenie, MotiliGenie, RiboGenie, ResistiGenie, SporeGenie).
     """
     if genie == "Custom":
         return "HmmGenie", []
