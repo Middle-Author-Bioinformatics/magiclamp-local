@@ -18,7 +18,7 @@ set -u
 export PATH="/home/ark/miniconda3/bin:/home/ark/miniconda3/envs/magiclamp/bin:/usr/local/bin:/usr/bin:/bin"
 export AWS_REGION="us-east-2"
 
-LOG="/home/ark/MAB/bin/magiclamp_worker_cron.log"
+LOG="/home/ark/MAB/bin/cronlogs/magiclamp_worker_cron.log"
 
 echo "===== $(date) starting MagicLamp worker =====" >> "$LOG"
 
@@ -31,7 +31,7 @@ if [ -f /tmp/magiclamp-worker.lock ]; then
 fi
 
 /home/ark/miniconda3/envs/magiclamp/bin/python \
-  /home/ark/MAB/bin/magiclamp-local/magiclamp_worker.py \
+  /home/ark/MAB/bin/magiclamp-local/react-app-backend/magiclamp_worker.py \
   --input-bucket midauthorbio-magiclamp-input \
   --results-bucket midauthorbio-magiclamp-results \
   --region us-east-2 \
