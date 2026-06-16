@@ -702,7 +702,7 @@ def process_job(args, s3, prefix: str) -> None:
     job_dir = job_root / "input"
     bins_dir = job_root / "bins"
     hmm_dir = job_root / "hmms"
-    out_dir = job_root / "magiclamp_out"
+    out_dir = job_root
     final_dir = job_root / "frontend_results"
     log_path = job_root / "run.log"
     job_root.mkdir(parents=True, exist_ok=True)
