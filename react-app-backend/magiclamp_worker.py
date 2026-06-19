@@ -535,32 +535,74 @@ def first_existing_recursive(root: Path, names: Iterable[str]) -> Path | None:
     return None
 
 
+# Genie-specific output filename overrides for Genies whose actual output
+# filenames diverge from the canonical <lower(genie)>-summary.csv /
+# <lower(genie)>.heatmap.csv pattern. Discovered empirically by reading
+# run.log files when frontend reports were missing data.
+#
+# FeGenie writes THREE files of interest:
+#   - fegenie-summary.csv         (human-readable visual summary)
+#   - FeGenie-geneSummary.csv     (machine-parseable summary with HMM column)
+#   - FeGenie-heatmap-data.csv    (the actual heatmap; note the `-data` suffix
+#                                  and dash-separated extension, not `.heatmap.csv`)
+# We prefer FeGenie-geneSummary.csv as the summary so the frontend's Gene
+# Calls tab gets the column layout it expects.
+GENIE_OUTPUT_OVERRIDES: dict[str, dict[str, list[str]]] = {
+    "FeGenie": {
+        # First match wins. Listed in preference order.
+        "summary": ["FeGenie-geneSummary.csv", "fegenie-summary.csv", "FeGenie-summary.csv"],
+        "heatmap": ["FeGenie-heatmap-data.csv", "FeGenie.heatmap.csv"],
+    },
+}
+
+
+def _candidates_for(genie: str, kind: str, default: str) -> list[str]:
+    """Return ordered filename candidates to look for, with overrides first."""
+    overrides = GENIE_OUTPUT_OVERRIDES.get(genie, {}).get(kind, [])
+    # Dedupe while preserving order; always include the canonical default last.
+    seen: set[str] = set()
+    out: list[str] = []
+    for name in [*overrides, default]:
+        key = name.lower()
+        if key not in seen:
+            seen.add(key)
+            out.append(name)
+    return out
+
+
 def find_summary_csv(out_dir: Path, genie: str) -> Path | None:
     """Find the per-Genie summary CSV emitted by MagicLamp.py.
 
-    MagicLamp writes <lower(genie)>-summary.csv (or hmmgenie-summary.csv for
-    Custom). We look for that file at the top of `out_dir` first, then
-    recursively as a safety net for older MagicLamp versions that nested
-    outputs one directory deeper.
+    Looks for filenames in this order:
+      1. Genie-specific overrides from GENIE_OUTPUT_OVERRIDES (e.g. FeGenie
+         writes 'FeGenie-geneSummary.csv', not the canonical name).
+      2. <lower(genie)>-summary.csv (or hmmgenie-summary.csv for Custom).
+
+    Each candidate is checked at the top of `out_dir` first, then
+    recursively as a safety net for nested-output MagicLamp versions.
     """
-    expected = summary_filename(genie)
-    direct = out_dir / expected
-    if direct.exists():
-        return direct
-    return first_existing_recursive(out_dir, [expected])
+    candidates = _candidates_for(genie, "summary", summary_filename(genie))
+    for name in candidates:
+        direct = out_dir / name
+        if direct.exists():
+            return direct
+    return first_existing_recursive(out_dir, candidates)
 
 
 def find_heatmap_csv(out_dir: Path, genie: str) -> Path | None:
     """Find the per-Genie heatmap CSV emitted by MagicLamp.py.
 
-    MagicLamp writes <lower(genie)>.heatmap.csv (or hmmgenie.heatmap.csv for
-    Custom). Same lookup pattern as the summary file.
+    Looks for filenames in this order:
+      1. Genie-specific overrides (e.g. FeGenie writes 'FeGenie-heatmap-data.csv'
+         instead of the canonical '<lower(genie)>.heatmap.csv').
+      2. <lower(genie)>.heatmap.csv.
     """
-    expected = heatmap_filename(genie)
-    direct = out_dir / expected
-    if direct.exists():
-        return direct
-    return first_existing_recursive(out_dir, [expected])
+    candidates = _candidates_for(genie, "heatmap", heatmap_filename(genie))
+    for name in candidates:
+        direct = out_dir / name
+        if direct.exists():
+            return direct
+    return first_existing_recursive(out_dir, candidates)
 
 
 def normalize_csv(src: Path, dest: Path) -> None:
@@ -590,6 +632,71 @@ def normalize_heatmap(src: Path, dest: Path) -> None:
     with dest.open("w", newline="", encoding="utf-8") as out:
         writer = csv.writer(out)
         writer.writerows(rows)
+
+
+def synthesize_heatmap_from_summary(summary_csv: Path, dest: Path) -> bool:
+    """Build a categories × genomes count matrix from a summary CSV.
+
+    A defensive fallback for when a Genie completes but fails to emit its own
+    heatmap CSV — this has been observed for FeGenie on single-genome inputs
+    and for some Genies when `--norm` isn't requested. The summary CSV always
+    contains a `category` column and a genome column (under varying names:
+    'genome/assembly', 'genome', 'bin', 'file', 'organism'), so we can
+    reconstruct the same categories × genomes count table the frontend
+    expects.
+
+    Returns True if a non-empty heatmap was written, False if we could not
+    find usable category / genome columns.
+    """
+    GENOME_COLS = ("genome/assembly", "genome", "bin", "file", "organism", "assembly")
+    CATEGORY_COLS = ("category", "Category", "subcategory")
+
+    with summary_csv.open("r", newline="", encoding="utf-8", errors="replace") as inp:
+        reader = csv.DictReader(inp)
+        fields = reader.fieldnames or []
+        # Pick a category column — prefer 'category', fall back to 'subcategory'.
+        cat_col = next((c for c in CATEGORY_COLS if c in fields), None)
+        gen_col = next((c for c in GENOME_COLS if c in fields), None)
+        if not cat_col or not gen_col:
+            logging.warning(
+                "synthesize_heatmap_from_summary: %s missing category or genome "
+                "column (cat=%s, genome=%s). Available columns: %s",
+                summary_csv, cat_col, gen_col, fields,
+            )
+            return False
+
+        from collections import defaultdict, OrderedDict
+        counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        genomes_ordered: "OrderedDict[str, None]" = OrderedDict()
+        categories_ordered: "OrderedDict[str, None]" = OrderedDict()
+
+        for row in reader:
+            cat = (row.get(cat_col) or "").strip()
+            genome = (row.get(gen_col) or "").strip()
+            # Skip header echoes and `####` separator rows used by some Genies.
+            if not cat or not genome:
+                continue
+            if cat in (cat_col, "category", "subcategory"):
+                continue
+            if cat.startswith("#") or genome.startswith("#"):
+                continue
+            counts[cat][genome] += 1
+            genomes_ordered.setdefault(genome, None)
+            categories_ordered.setdefault(cat, None)
+
+    if not categories_ordered or not genomes_ordered:
+        logging.warning(
+            "synthesize_heatmap_from_summary: no usable rows in %s", summary_csv,
+        )
+        return False
+
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with dest.open("w", newline="", encoding="utf-8") as out:
+        writer = csv.writer(out)
+        writer.writerow(["X", *genomes_ordered.keys()])
+        for cat in categories_ordered:
+            writer.writerow([cat, *(counts[cat].get(g, 0) for g in genomes_ordered)])
+    return True
 
 
 def write_fallback_report(dest: Path, slug: str, genie: str, summary_csv: Path, heatmap_csv: Path | None) -> None:
@@ -793,6 +900,23 @@ def process_job(args, s3, prefix: str) -> None:
                     heatmap_dest = final_dir / heatmap_filename(genie)
                     normalize_heatmap(heatmap_src, heatmap_dest)
                     per_genie_heatmap_paths.append(heatmap_dest)
+                else:
+                    # FeGenie (and a few others) occasionally complete without
+                    # writing a heatmap CSV — most commonly on single-genome
+                    # inputs. Rather than ship an incomplete results page that
+                    # says "Heatmap not available for this run", we synthesize
+                    # the categories × genomes count table from the summary CSV.
+                    # If even that fails (no category/genome columns), we leave
+                    # heatmap_dest as None and the frontend's existing empty
+                    # state still kicks in.
+                    candidate = final_dir / heatmap_filename(genie)
+                    if synthesize_heatmap_from_summary(summary_dest, candidate):
+                        heatmap_dest = candidate
+                        per_genie_heatmap_paths.append(heatmap_dest)
+                        log_handle.write(
+                            f"[{genie}] No heatmap CSV emitted by MagicLamp; "
+                            f"synthesized {candidate.name} from the summary CSV.\n"
+                        )
 
                 # Per-Genie Plotly report.
                 report_dest = final_dir / f"{genie}-report.html"
