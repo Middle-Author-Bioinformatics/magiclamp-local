@@ -115,25 +115,30 @@ GENBANK_GENE_QUAL_RE = re.compile(r"/gene=")
 
 # Genies that have a dedicated MagicLamp.py subcommand (i.e., MagicLamp.py FeGenie ...).
 # Anything not in this set is routed through OmniGenie -genie <Name>.
+# Genies that have their own `elif argv[1] == "X"` dispatch branch in
+# MagicLamp.py on the worker host. Anything NOT in this set falls through
+# to `OmniGenie -genie X`, which dispatches the genie internally inside
+# OmniGenie and works for everything OmniGenie knows about.
+#
+# This set must stay strictly in sync with MagicLamp.py's elif branches.
+# Adding a Genie here that has no MagicLamp.py branch causes the worker
+# to invoke `MagicLamp.py X ...`, which prints the help text and exits
+# with no output -- silently producing an empty result set in S3. That's
+# what bit jobs that selected PolGenie/WspGenie/RosGenie/GasGenie/
+# PlasticGenie/MagnetoGenie/CrisprGenie/BTEXGenie/FeGenie historically.
+#
+# To verify on the worker host:
+#   grep -E "elif argv\[1\] ==" /home/ark/MAB/bin/MagicLamp/MagicLamp.py
 NAMED_GENIES = {
-    "FeGenie",
     "LithoGenie",
     "Lucifer",
     "ATPGenie",
-    "WspGenie",
-    "RosGenie",
-    "PolGenie",
-    "GasGenie",
     "RnfGenie",
-    "PlasticGenie",
-    "MagnetoGenie",
-    "CrisprGenie",
     "AbxGenie",
     "MotiliGenie",
     "RiboGenie",
     "ResistiGenie",
     "SporeGenie",
-    "BTEXGenie",
     "PortGenie",
 }
 
@@ -948,8 +953,15 @@ def process_job(args, s3, prefix: str) -> None:
             upload_file(s3, args.results_bucket, f"{result_prefix}{p.name}", p, "text/csv")
         for p in per_genie_report_paths:
             upload_file(s3, args.results_bucket, f"{result_prefix}{p.name}", p, "text/html")
-        # The tarball lives one level above the prefix — matches results.tsx.
-        upload_file(s3, args.results_bucket, f"{slug}-results.tar.gz", tar_path, "application/gzip")
+        # The tarball lives INSIDE the slug prefix alongside the other
+        # artifacts. Previously it was uploaded one level above (at the
+        # bucket root), which worked only when the bucket policy granted
+        # s3:GetObject on the bare root — most public-read policies grant
+        # it on the slug prefix only, producing AccessDenied (403) when the
+        # download link resolved to a root-level key. Keeping the tarball
+        # inside the slug prefix also means lifecycle rules on magiclamp-*
+        # clean it up correctly.
+        upload_file(s3, args.results_bucket, f"{result_prefix}{slug}-results.tar.gz", tar_path, "application/gzip")
         upload_file(s3, args.results_bucket, f"{result_prefix}run.log", log_path, "text/plain")
 
         result_url = (
