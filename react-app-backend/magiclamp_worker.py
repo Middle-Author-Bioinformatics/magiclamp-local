@@ -844,9 +844,10 @@ def process_job(args, s3, prefix: str) -> None:
 
         needs_hmm = any(g == "Custom" for g in manifest.genies)
         used_hmm_dir: Path | None = None
-        if needs_hmm:
-            if not hmms:
-                raise RuntimeError("HmmGenie (Custom) needs at least one .hmm file in the upload.")
+        # Missing HMMs only fails the Custom genie, not the whole job, so any
+        # other genies in the manifest still run.
+        custom_missing_hmm = needs_hmm and not hmms
+        if needs_hmm and not custom_missing_hmm:
             prepare_hmms(hmms, hmm_dir)
             used_hmm_dir = hmm_dir
 
@@ -855,6 +856,14 @@ def process_job(args, s3, prefix: str) -> None:
         per_genie_summary_paths: list[Path] = []
         per_genie_heatmap_paths: list[Path] = []
         per_genie_report_paths: list[Path] = []
+
+        if custom_missing_hmm:
+            per_genie_status.append({
+                "genie": "Custom",
+                "state": "failed",
+                "error": "No .hmm files were uploaded for HmmGenie (Custom).",
+            })
+            manifest.genies = [g for g in manifest.genies if g != "Custom"]
 
         final_dir.mkdir(parents=True, exist_ok=True)
 
