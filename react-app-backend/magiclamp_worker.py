@@ -140,6 +140,7 @@ NAMED_GENIES = {
     "ResistiGenie",
     "SporeGenie",
     "PortGenie",
+    "FeGenie"
 }
 
 
